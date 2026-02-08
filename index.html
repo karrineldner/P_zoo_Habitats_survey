@@ -578,33 +578,6 @@ function makeImageGridQuestion(q) {
         setupRingHelpControl('kc-green-help', 'kc-green-audio', 'rGreen', 'rGreen', -Math.PI/2, 40);
       }
 
-      function placeStartTiles () {
-        var board = document.getElementById('board');
-        if (!board) return;
-
-        var existing = board.querySelectorAll('.tile-placeholder');
-        existing.forEach(function(el){ try { el.parentNode.removeChild(el); } catch(e){} });
-
-        var boardRect = board.getBoundingClientRect();
-        var boardW = boardRect.width || BOARD_SIZE;
-        var boardH = boardRect.height || BOARD_SIZE;
-        var cx = boardW / 2;
-        var cy = boardH / 2;
-        var radii = computeRadii(board);
-        var rRed = radii && radii.rRed ? radii.rRed : ((Math.min(boardW, boardH) - WHITE_MARGIN)/2);
-        var boardRadius = Math.min(boardW, boardH) / 2;
-
-        var tileW = 110, tileH = 110;
-        var tileRadius = Math.max(tileW, tileH) / 2.5;
-
-        var maxR = boardRadius - tileRadius - 4;
-        var minR = rRed + tileRadius + 8;
-        var preferR = rRed + (boardRadius - rRed) * 0.6;
-        var placementRadius = Math.max(minR, Math.min(preferR, maxR));
-
-        var n = ITEMS.length;
-        var angleStep = (Math.PI * 2) / n;
-
 function placeStartTiles () {
   var board = document.getElementById('board');
   if (!board) return;
