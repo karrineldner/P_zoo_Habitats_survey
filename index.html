@@ -324,7 +324,6 @@ function shuffleArray(arr) {
   return arr;
 }
 
-
       // ======= SURVEY TRIAL BUILDERS =======
       function makePidEntryTrial() {
         return {
@@ -606,182 +605,215 @@ function makeImageGridQuestion(q) {
         var n = ITEMS.length;
         var angleStep = (Math.PI * 2) / n;
 
-        ITEMS.forEach(function (it, i) {
-          var angle = -Math.PI/2 + (i * angleStep);
-          var left = cx + (placementRadius * Math.cos(angle)) - (tileW/2);
-          var top  = cy + (placementRadius * Math.sin(angle)) - (tileH/2);
+function placeStartTiles () {
+  var board = document.getElementById('board');
+  if (!board) return;
 
-          var placeholder = document.createElement('div');
-          placeholder.className = 'tile-placeholder';
-          placeholder.id = 'ph-' + it.id;
-          placeholder.style.width = tileW + 'px';
-          placeholder.style.height = tileH + 'px';
-          placeholder.style.pointerEvents = 'auto';
-          placeholder.style.position = 'absolute';
-          placeholder.style.left = Math.round(left) + 'px';
-          placeholder.style.top = Math.round(top) + 'px';
-          placeholder.style.zIndex = 200001;
-          board.appendChild(placeholder);
+  var existing = board.querySelectorAll('.tile-placeholder');
+  existing.forEach(function(el){ try { el.parentNode.removeChild(el); } catch(e){} });
 
-          var t = document.createElement('div');
-          t.className = 'tile';
-          t.id = 'tile-' + it.id;
-          t.setAttribute('data-id', it.id);
+  var boardRect = board.getBoundingClientRect();
+  var boardW = boardRect.width || BOARD_SIZE;
+  var boardH = boardRect.height || BOARD_SIZE;
+  var cx = boardW / 2;
+  var cy = boardH / 2;
+  var radii = computeRadii(board);
+  var rRed = radii && radii.rRed ? radii.rRed : ((Math.min(boardW, boardH) - WHITE_MARGIN)/2);
+  var boardRadius = Math.min(boardW, boardH) / 2;
 
-          if (it.img) {
-            var im = document.createElement('img');
-            im.src = it.img; im.alt = it.label; im.draggable = false; t.appendChild(im);
-          } else {
-            t.textContent = it.label;
-          }
-          t.style.touchAction = 'none';
+  var tileW = 110, tileH = 110;
+  var tileRadius = Math.max(tileW, tileH) / 2.5;
 
-          // NEW: hover label + click-to-pin
-          attachHoverAndClickLabel(t, it.label);
+  var maxR = boardRadius - tileRadius - 4;
+  var minR = rRed + tileRadius + 8;
+  var preferR = rRed + (boardRadius - rRed) * 0.6;
+  var placementRadius = Math.max(minR, Math.min(preferR, maxR));
 
-          placeholder.appendChild(t);
-          board.appendChild(placeholder);
-          enableDrag(t, board);
-        });
+  // ======= NEW: RANDOMISE WHICH ITEM GOES TO WHICH ANGLE =======
+  var shuffledItems = shuffleArray(ITEMS.slice());
 
-        try { setTimeout(setupAllRingHelpControls, 20); } catch(e){}
-      }
+  // Optional: save the placement order for analysis/debugging
+  window.KC_ITEM_ORDER = shuffledItems.map(function(it){ return it.id; });
 
-      function enableDrag (el, board) {
-        var ox=0, oy=0, dragging=false;
-        var original = {};
-        var dragEl = null;
+  var n = shuffledItems.length;
+  var angleStep = (Math.PI * 2) / n;
 
-        function clearRingHighlights() {
-          var rings = board.querySelectorAll('.ring');
-          rings.forEach(function(r){ r.classList.remove('active'); });
-        }
+  shuffledItems.forEach(function (it, i) {
+    var angle = -Math.PI/2 + (i * angleStep);
+    var left = cx + (placementRadius * Math.cos(angle)) - (tileW/2);
+    var top  = cy + (placementRadius * Math.sin(angle)) - (tileH/2);
 
-        function down (e) {
-          var p = e.touches ? e.touches[0] : e;
-          dragging = true; el.classList.add('dragging');
-          e.preventDefault();
+    var placeholder = document.createElement('div');
+    placeholder.className = 'tile-placeholder';
+    placeholder.id = 'ph-' + it.id;
+    placeholder.style.width = tileW + 'px';
+    placeholder.style.height = tileH + 'px';
+    placeholder.style.pointerEvents = 'auto';
+    placeholder.style.position = 'absolute';
+    placeholder.style.left = Math.round(left) + 'px';
+    placeholder.style.top = Math.round(top) + 'px';
+    placeholder.style.zIndex = 200001;
+    board.appendChild(placeholder);
 
-          clearRingHighlights();
+    var t = document.createElement('div');
+    t.className = 'tile';
+    t.id = 'tile-' + it.id;
+    t.setAttribute('data-id', it.id);
 
-          // clear "pinned" selection on pick-up (optional; remove if you want it to stay selected)
-          try { el.classList.remove('selected'); } catch(e){}
+    if (it.img) {
+      var im = document.createElement('img');
+      im.src = it.img; im.alt = it.label; im.draggable = false; t.appendChild(im);
+    } else {
+      t.textContent = it.label;
+    }
+    t.style.touchAction = 'none';
 
-          original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '')));
-          original.parent = original.placeholder;
-          original.id = el.id;
+    // hover label + click-to-pin
+    attachHoverAndClickLabel(t, it.label);
 
-          var elRect = el.getBoundingClientRect();
-          ox = p.clientX - elRect.left; oy = p.clientY - elRect.top;
+    placeholder.appendChild(t);
+    board.appendChild(placeholder);
+    enableDrag(t, board);
+  });
 
-          try {
-            el.style.width = elRect.width + 'px';
-            el.style.height = elRect.height + 'px';
-            el.style.position = 'fixed';
-            el.style.left = (p.clientX - ox) + 'px';
-            el.style.top = (p.clientY - oy) + 'px';
-            el.style.zIndex = 99999;
-            el.style.pointerEvents = 'none';
-            try { if (original.parent && original.parent.contains(el)) original.parent.removeChild(el); } catch(e){}
-            document.body.appendChild(el);
-            dragEl = el;
-          } catch (err) { console.error('move-on-pickup failed', err); }
+  try { setTimeout(setupAllRingHelpControls, 20); } catch(e){}
+}
 
-          window.addEventListener('pointermove', move);
-          window.addEventListener('pointerup', up, { once:true });
-        }
+function enableDrag (el, board) {
+  var ox=0, oy=0, dragging=false;
+  var original = {};
+  var dragEl = null;
 
-        function move (e) {
-          if (!dragging || !dragEl) return;
-          var p = e.touches ? e.touches[0] : e;
-          dragEl.style.left = (p.clientX - ox) + 'px';
-          dragEl.style.top  = (p.clientY - oy) + 'px';
+  function clearRingHighlights() {
+    var rings = board.querySelectorAll('.ring');
+    rings.forEach(function(r){ r.classList.remove('active'); });
+  }
 
-          var boardRect = board.getBoundingClientRect();
-          var elRect = dragEl.getBoundingClientRect();
-          var centerX = elRect.left + elRect.width/2;
-          var centerY = elRect.top + elRect.height/2;
-          var cx = boardRect.left + boardRect.width/2;
-          var cy = boardRect.top + boardRect.height/2;
-          var dx = centerX - cx, dy = centerY - cy;
-          var dist = Math.sqrt(dx*dx + dy*dy);
+  function down (e) {
+    var p = e.touches ? e.touches[0] : e;
+    dragging = true; el.classList.add('dragging');
+    e.preventDefault();
 
-          var radii = computeRadii(board);
-          clearRingHighlights();
-          if (dist <= radii.rGreen)       { var ring = board.querySelector('.ring.green');  if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rOrange) { var ring = board.querySelector('.ring.orange'); if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rRed)    { var ring = board.querySelector('.ring.red');    if (ring) ring.classList.add('active'); }
-        }
+    clearRingHighlights();
 
-        function up (e) {
-          dragging = false;
-          window.removeEventListener('pointermove', move);
-          if (!dragEl) return;
+    // clear "pinned" selection on pick-up (optional; remove if you want it to stay selected)
+    try { el.classList.remove('selected'); } catch(e){}
 
-          var boardRect = board.getBoundingClientRect();
-          var elRect = dragEl.getBoundingClientRect();
-          var centerX = elRect.left + elRect.width/2;
-          var centerY = elRect.top + elRect.height/2;
-          var cx = boardRect.left + boardRect.width/2;
-          var cy = boardRect.top + boardRect.height/2;
-          var dx = centerX - cx, dy = centerY - cy;
-          var dist = Math.sqrt(dx*dx + dy*dy);
+    original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '')));
+    original.parent = original.placeholder;
+    original.id = el.id;
 
-          var radii = computeRadii(board);
-          var droppedIn = false; var which = null;
-          if (dist <= radii.rGreen)        { droppedIn = true; which = 'green'; }
-          else if (dist <= radii.rOrange)  { droppedIn = true; which = 'orange'; }
-          else if (dist <= radii.rRed)     { droppedIn = true; which = 'red'; }
+    var elRect = el.getBoundingClientRect();
+    ox = p.clientX - elRect.left; oy = p.clientY - elRect.top;
 
-          var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '');
+    try {
+      el.style.width = elRect.width + 'px';
+      el.style.height = elRect.height + 'px';
+      el.style.position = 'fixed';
+      el.style.left = (p.clientX - ox) + 'px';
+      el.style.top = (p.clientY - oy) + 'px';
+      el.style.zIndex = 99999;
+      el.style.pointerEvents = 'none';
+      try { if (original.parent && original.parent.contains(el)) original.parent.removeChild(el); } catch(e){}
+      document.body.appendChild(el);
+      dragEl = el;
+    } catch (err) { console.error('move-on-pickup failed', err); }
 
-          if (droppedIn) {
-            var left = elRect.left - boardRect.left;
-            var top  = elRect.top  - boardRect.top;
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up, { once:true });
+  }
 
-            el.classList.add('item');
-            el.style.position = 'absolute';
-            el.style.left = left + 'px';
-            el.style.top  = top  + 'px';
-            el.style.zIndex = '';
-            el.style.pointerEvents = '';
-            el.id = 'item-' + dataId;
-            el.setAttribute('data-id', dataId);
-            el.style.background = 'transparent';
+  function move (e) {
+    if (!dragging || !dragEl) return;
+    var p = e.touches ? e.touches[0] : e;
+    dragEl.style.left = (p.clientX - ox) + 'px';
+    dragEl.style.top  = (p.clientY - oy) + 'px';
 
-            // ensure label exists even after moving into board
-            var it = ITEMS.find(function(x){ return x.id === dataId; });
-            attachHoverAndClickLabel(el, (it && it.label) ? it.label : dataId);
+    var boardRect = board.getBoundingClientRect();
+    var elRect = dragEl.getBoundingClientRect();
+    var centerX = elRect.left + elRect.width/2;
+    var centerY = elRect.top + elRect.height/2;
+    var cx = boardRect.left + boardRect.width/2;
+    var cy = boardRect.top + boardRect.height/2;
+    var dx = centerX - cx, dy = centerY - cy;
+    var dist = Math.sqrt(dx*dx + dy*dy);
 
-            board.appendChild(el);
+    var radii = computeRadii(board);
+    clearRingHighlights();
+    if (dist <= radii.rGreen)       { var ring = board.querySelector('.ring.green');  if (ring) ring.classList.add('active'); }
+    else if (dist <= radii.rOrange) { var ring = board.querySelector('.ring.orange'); if (ring) ring.classList.add('active'); }
+    else if (dist <= radii.rRed)    { var ring = board.querySelector('.ring.red');    if (ring) ring.classList.add('active'); }
+  }
 
-            var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
-            setItemScore(dataId, scoreVal);
+  function up (e) {
+    dragging = false;
+    window.removeEventListener('pointermove', move);
+    if (!dragEl) return;
 
-            clearRingHighlights();
-            var ring = board.querySelector('.ring.' + which);
-            if (ring) ring.classList.add('active');
-          } else {
-            try {
-              el.classList.remove('item');
-              el.classList.remove('selected'); // optional: clear pinned on return
-              el.style.position = '';
-              el.style.left = '';
-              el.style.top = '';
-              el.style.width = '';
-              el.style.height = '';
-              el.style.pointerEvents = '';
-              if (original.parent) original.parent.appendChild(el);
-            } catch (err) { console.error('restore failed', err); }
-            setItemScore(dataId, 0);
-          }
+    var boardRect = board.getBoundingClientRect();
+    var elRect = dragEl.getBoundingClientRect();
+    var centerX = elRect.left + elRect.width/2;
+    var centerY = elRect.top + elRect.height/2;
+    var cx = boardRect.left + boardRect.width/2;
+    var cy = boardRect.top + boardRect.height/2;
+    var dx = centerX - cx, dy = centerY - cy;
+    var dist = Math.sqrt(dx*dx + dy*dy);
 
-          dragEl.classList.remove('dragging');
-          dragEl = null;
-        }
+    var radii = computeRadii(board);
+    var droppedIn = false; var which = null;
+    if (dist <= radii.rGreen)        { droppedIn = true; which = 'green'; }
+    else if (dist <= radii.rOrange)  { droppedIn = true; which = 'orange'; }
+    else if (dist <= radii.rRed)     { droppedIn = true; which = 'red'; }
 
-        el.addEventListener('pointerdown', down);
-      }
+    var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '');
+
+    if (droppedIn) {
+      var left = elRect.left - boardRect.left;
+      var top  = elRect.top  - boardRect.top;
+
+      el.classList.add('item');
+      el.style.position = 'absolute';
+      el.style.left = left + 'px';
+      el.style.top  = top  + 'px';
+      el.style.zIndex = '';
+      el.style.pointerEvents = '';
+      el.id = 'item-' + dataId;
+      el.setAttribute('data-id', dataId);
+      el.style.background = 'transparent';
+
+      // ensure label exists even after moving into board
+      var it = ITEMS.find(function(x){ return x.id === dataId; });
+      attachHoverAndClickLabel(el, (it && it.label) ? it.label : dataId);
+
+      board.appendChild(el);
+
+      var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
+      setItemScore(dataId, scoreVal);
+
+      clearRingHighlights();
+      var ring = board.querySelector('.ring.' + which);
+      if (ring) ring.classList.add('active');
+    } else {
+      try {
+        el.classList.remove('item');
+        el.classList.remove('selected'); // optional: clear pinned on return
+        el.style.position = '';
+        el.style.left = '';
+        el.style.top = '';
+        el.style.width = '';
+        el.style.height = '';
+        el.style.pointerEvents = '';
+        if (original.parent) original.parent.appendChild(el);
+      } catch (err) { console.error('restore failed', err); }
+      setItemScore(dataId, 0);
+    }
+
+    dragEl.classList.remove('dragging');
+    dragEl = null;
+  }
+
+  el.addEventListener('pointerdown', down);
+}
 
       // ======= INSTRUCTIONS (GAME) =======
       var instructions = {
@@ -939,7 +971,7 @@ function makeImageGridQuestion(q) {
         type: 'html-keyboard-response',
         stimulus: '<div style="max-width:820px;text-align:center">' +
                    '<div style="margin-top:16px;font-weight:700;font-size:1.5rem;">Saving your choices…</div>' +
-                   '<div style="margin-top:8px;font-size:1rem;opacity:0.95;">Please wait. This will only take a moment.</div>' +
+                   '<div style="margin-top:8px;font-size:1rem;opacity:0.95;">Please wait so that we can save your scores. This will only take a moment.</div>' +
                  '</div>',
         choices: [],
         on_load: function() {
@@ -970,7 +1002,7 @@ function makeImageGridQuestion(q) {
               '<div style="margin-top:16px;font-weight:800;font-size:1.6rem;">All done!</div>' +
               (ok
                 ? '<div style="margin-top:10px;font-size:1rem;">Your choices have been saved. Thank you!</div>'
-                : '<div style="margin-top:10px;font-size:1rem;color:#c21f1f;">Your choices may not have saved. Please contact the researcher.</div>'
+                : '<div style="margin-top:10px;font-size:1rem;color:#c21f1f;">Your choices may not have saved. Please refresh the page.</div>'
               ) +
             '</div>';
         },
