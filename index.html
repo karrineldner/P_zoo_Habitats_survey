@@ -540,6 +540,21 @@
         ]
       }));
 
+            timeline.push(makeImageGridQuestion({
+        id: 'efficacy_1',
+        kc_trial: 'efficacy_1',
+        saveAs: 'efficacy_1',
+        prompt: 'I can help nature by my actions',
+        gridClass: 'kc-optgrid-5',
+        options: [
+          { value: 'I couldn't help at all',           label: 'I couldn't help at all',           img: 'img/Really_dontlike.png' },
+          { value: 'I could help a tiny bit',  label: 'A little bit important',  img: 'img/Dont_like.png' },
+          { value: 'I'm not sure',       label: 'I'm not sure',       img: 'img/Not_sure.png' },
+          { value: 'I could help a lot',          label: 'I could help a lot',          img: 'img/Like_little.png' },
+          { value: 'I could help very much',          label: 'I could help very much',          img: 'img/Really_like.png' }
+        ]
+      }));
+
       // ======= GAME (CIRCLES TASK) =======
       function boardHTML () {
         return '' +
