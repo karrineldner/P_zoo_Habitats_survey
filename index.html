@@ -982,18 +982,26 @@
             var scoresObj = Object.assign({}, SCORES);
             var total = ITEMS.reduce(function(acc,it){ return acc + (scoresObj[it.id] || 0); }, 0);
 
-            var props = {};
-            try { props = jsPsych.data.get().values()[0] || {}; } catch(e){}
+      // Get the most recent value of a property across all trials
+function getLatestProp(propName) {
+  try {
+    var rows = jsPsych.data.get().values();
+    for (var i = rows.length - 1; i >= 0; i--) {
+      if (rows[i] && rows[i][propName] != null) return rows[i][propName];
+    }
+  } catch(e){}
+  return null;
+}
 
-            var payload = {
-              participantId: participantId,
-              nature_choice: props.nature_choice || null,
-              nature_importance: props.nature_importance || null,
-              efficacy_1: props.efficacy_1 || null,
-              item_ids: ITEMS.map(function(it){ return it.id; }),
-              scores: scoresObj,
-              total: total
-            };
+var payload = {
+  participantId: participantId,
+  nature_choice: getLatestProp('nature_choice'),
+  nature_importance: getLatestProp('nature_importance'),
+  efficacy_1: getLatestProp('efficacy_1'),
+  item_ids: ITEMS.map(function(it){ return it.id; }),
+  scores: scoresObj,
+  total: total
+};
 
             if (!endpoint || endpoint.indexOf('PASTE_YOUR_NEW_APPS_SCRIPT_WEBAPP_URL_HERE') !== -1) {
               window.KC_SUBMIT_DONE = true;
