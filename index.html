@@ -14,48 +14,72 @@
 
     <style>
       :root{
-  /* board diameter: always fits in viewport */
-  --size: min(92vmin, 920px);
+        /* board diameter: always fits in viewport */
+        --size: min(92vmin, 920px);
 
-  /* white rim outside the red ring (space where your tiles sit) */
-  --white-margin: clamp(120px, 18vmin, 240px);
+        /* white rim outside the red ring (space where your tiles sit) */
+        --white-margin: clamp(120px, 18vmin, 240px);
 
-  /* ring thickness: increase this to make rings "wider" */
-  --band: clamp(60px, 8vmin, 110px);
+        /* ring thickness */
+        --band: clamp(60px, 8vmin, 110px);
 
-  --red-diameter: calc(var(--size) - var(--white-margin));
-  --orange-band: var(--band);
-  --green-band: var(--band);
-}
+        --red-diameter: calc(var(--size) - var(--white-margin));
+        --orange-band: var(--band);
+        --green-band: var(--band);
+      }
+
       html, body { background:#fff; color:#000; margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
       #jspsych-target { display:grid; place-items:center; min-height:100vh; }
 
       .wrap { display:flex; gap:24px; align-items:flex-start; padding:16px; }
-      .board { position:relative; width:var(--size); height:var(--size); background:#fff; border-radius:50%; display:grid; place-items:center; overflow:visible; }
-      .ring { position:absolute; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); }
+      .board {
+        position:relative;
+        width:var(--size);
+        height:var(--size);
+        background:#fff;
+        border-radius:50%;
+        display:grid;
+        place-items:center;
+        overflow:visible;
+      }
+      .ring { position:absolute; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; }
       .ring.red    { background:#c21f1f; width:var(--red-diameter); height:var(--red-diameter); z-index:1; }
       .ring.orange { background:#ff7a21; width:calc(var(--red-diameter) - (2 * var(--orange-band))); height:calc(var(--red-diameter) - (2 * var(--orange-band))); z-index:1; }
       .ring.green  { background:#1aaa1a; width:calc(var(--red-diameter) - (2 * var(--orange-band)) - (2 * var(--green-band))); height:calc(var(--red-diameter) - (2 * var(--orange-band)) - (2 * var(--green-band))); z-index:1; }
-      .center { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:calc(var(--red-diameter) - (6 * var(--band))); height:calc(var(--red-diameter) - (6 * var(--band))); border-radius:50%; background:var(--board-bg, #fff); z-index:1; }
 
-      .kc-ring-help { position:absolute; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.95); border:2px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; cursor:pointer; z-index:100000; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+      .ring.active { filter: brightness(1.25); box-shadow: 0 0 18px rgba(0,0,0,0.25) inset; }
+
+      .kc-ring-help {
+        position:absolute; width:44px; height:44px; border-radius:50%;
+        background:rgba(255,255,255,0.95);
+        border:2px solid rgba(0,0,0,0.08);
+        display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:20px; cursor:pointer;
+        z-index:100000;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      }
       .kc-ring-help.kc-help-red    { color:#c21f1f; }
       .kc-ring-help.kc-help-orange { color:#ff7a21; }
       .kc-ring-help.kc-help-green  { color:#1aaa1a; }
 
       .start-strip { width:220px; }
       .tiles { display:flex; flex-wrap:wrap; gap:8px; max-height:calc(var(--size) - 20px); overflow:auto; }
-      .tile { width:100px; height:100px; border-radius:14px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none; position: relative; z-index:300001; font-size: 26px; font-weight:700; }
+      .tile {
+        width:100px; height:100px; border-radius:14px; background:transparent;
+        display:flex; align-items:center; justify-content:center;
+        cursor:grab; touch-action:none;
+        position: relative; z-index:300001;
+        font-size: 26px; font-weight:700;
+      }
       .tile img { width:100%; height:100%; object-fit:contain; border-radius:12px; pointer-events:none; border:0; outline:0; }
 
-      .ring { pointer-events:none; }
-      .ring.active { filter: brightness(1.25); box-shadow: 0 0 18px rgba(0,0,0,0.25) inset; }
-
-      .item { position:absolute; width:130px; height:130px; border-radius:14px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; z-index:300000; }
+      .item {
+        position:absolute; width:130px; height:130px; border-radius:14px; background:transparent;
+        display:flex; align-items:center; justify-content:center;
+        cursor:grab; user-select:none; z-index:300000;
+      }
       .item.dragging { opacity:.85; cursor:grabbing; }
       .item img { width:100%; height:100%; object-fit:contain; border-radius:12px; border:0; outline:0; }
-
-      .kc-tooltip { position:fixed !important; pointer-events:none !important; background:rgba(0,0,0,0.85); color:#fff; padding:6px 8px; border-radius:6px; z-index:2147483647 !important; transform:translate(8px,8px); will-change: transform; }
 
       .tile-placeholder { width:130px; height:130px; display:inline-block; vertical-align:top; border-radius:14px; background:transparent; }
 
@@ -100,20 +124,10 @@
       }
       .kc-textbox:focus { border-color: rgba(40,167,69,0.9); box-shadow: 0 0 0 4px rgba(40,167,69,0.14); }
 
-      /* Page 2: fixed 3 columns grid */
-      .kc-optgrid-3 {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-      }
+      .kc-optgrid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
       .kc-optgrid-3 .kc-opt img { height: 150px; }
 
-      /* Page 3: 5 options, responsive */
-      .kc-optgrid-5 {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 14px;
-      }
+      .kc-optgrid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
 
       .kc-opt {
         border: 2px solid rgba(0,0,0,0.12);
@@ -132,24 +146,20 @@
       .kc-opt img { width: 100%; height: 140px; object-fit: contain; display:block; }
       .kc-optlabel { margin-top: 10px; font-size: 1.05rem; font-weight: 700; text-align: center; }
 
-      /* ===== LABEL POPUP + CLICK HIGHLIGHT (NEW) ===== */
-      .tile, .item { position: relative; } /* ensure label positioning works */
+      /* ===== LABEL POPUP + CLICK HIGHLIGHT ===== */
+      .tile, .item { position: relative; }
 
-      /* show label on hover */
       .tile:hover .kc-label,
       .item:hover .kc-label { opacity: 1; transform: translate(-50%, 0); }
 
-      /* keep label visible when clicked (selected) */
       .tile.selected .kc-label,
       .item.selected .kc-label { opacity: 1; transform: translate(-50%, 0); }
 
-      /* green outline highlight when clicked */
       .tile.selected, .item.selected {
         outline: 5px solid rgba(40,167,69,0.85);
         box-shadow: 0 0 0 6px rgba(40,167,69,0.18);
       }
 
-      /* label bubble */
       .kc-label {
         position: absolute;
         left: 50%;
@@ -162,22 +172,22 @@
         font-size: 16px;
         font-weight: 800;
         white-space: nowrap;
-        pointer-events: none; /* don't interfere with dragging */
+        pointer-events: none;
         opacity: 0;
         transition: opacity 120ms ease, transform 120ms ease;
         z-index: 999999;
       }
-      /* iPad / narrow screens: stack tiles strip under the circle so it fits */
-@media (max-width: 900px){
-  .wrap{ flex-direction: column; align-items: center; }
-  .start-strip{ width: min(92vmin, 520px); }
-  .tiles{ max-height: 240px; }
-}
+
+      /* iPad / narrow screens */
+      @media (max-width: 900px){
+        .wrap{ flex-direction: column; align-items: center; }
+        .start-strip{ width: min(92vmin, 520px); }
+        .tiles{ max-height: 240px; }
+      }
     </style>
   </head>
 
   <body>
-    <!-- Remote collector: update endpoint to your NEW Google Apps Script Web App URL -->
     <script>
       window.KC_REMOTE_ENDPOINT = window.KC_REMOTE_ENDPOINT || 'https://script.google.com/macros/s/AKfycbzr8dWDuoUhPtx8kzX9Xdwllk3CB0nnLK0Tjug7mG8bbnt9F8rGLaFb45-2D2dLrsrv/exec';
       window.KC_REMOTE_SECRET = window.KC_REMOTE_SECRET || 'TESTER';
@@ -188,43 +198,43 @@
     <script>
       // ======= GLOBALS / CONFIG =======
       var timeline = [];
-      var participantId = null; // set on Page 1
+      var participantId = null;
 
       // ======= RESUME AFTER REFRESH (15 min) =======
-var KC_RESUME_KEY = 'KC_HABITATS_STATE_v1';
-var KC_RESUME_TTL_MS = 15 * 60 * 1000; // 15 minutes
+      var KC_RESUME_KEY = 'KC_HABITATS_STATE_v1';
+      var KC_RESUME_TTL_MS = 15 * 60 * 1000;
 
-function kcSaveState() {
-  try {
-    var prog = jsPsych.progress(); // jsPsych 6
-    var state = {
-      t: Date.now(),
-      next_trial: (prog.current_trial_global || 0) + 1, // resume at next trial
-      participantId: participantId || null,
-      scores: Object.assign({}, SCORES || {}),
-      props: (jsPsych.data.get().values()[0] || {}) // includes nature_choice etc
-    };
-    localStorage.setItem(KC_RESUME_KEY, JSON.stringify(state));
-  } catch (e) {}
-}
+      function kcSaveState() {
+        try {
+          var prog = jsPsych.progress();
+          var state = {
+            t: Date.now(),
+            next_trial: (prog.current_trial_global || 0) + 1,
+            participantId: participantId || null,
+            scores: Object.assign({}, SCORES || {}),
+            props: (jsPsych.data.get().values()[0] || {})
+          };
+          localStorage.setItem(KC_RESUME_KEY, JSON.stringify(state));
+        } catch (e) {}
+      }
 
-function kcLoadState() {
-  try {
-    var raw = localStorage.getItem(KC_RESUME_KEY);
-    if (!raw) return null;
-    var state = JSON.parse(raw);
-    if (!state || !state.t) return null;
-    if (Date.now() - state.t > KC_RESUME_TTL_MS) {
-      localStorage.removeItem(KC_RESUME_KEY);
-      return null;
-    }
-    return state;
-  } catch (e) { return null; }
-}
+      function kcLoadState() {
+        try {
+          var raw = localStorage.getItem(KC_RESUME_KEY);
+          if (!raw) return null;
+          var state = JSON.parse(raw);
+          if (!state || !state.t) return null;
+          if (Date.now() - state.t > KC_RESUME_TTL_MS) {
+            localStorage.removeItem(KC_RESUME_KEY);
+            return null;
+          }
+          return state;
+        } catch (e) { return null; }
+      }
 
-function kcClearState() {
-  try { localStorage.removeItem(KC_RESUME_KEY); } catch (e) {}
-}
+      function kcClearState() {
+        try { localStorage.removeItem(KC_RESUME_KEY); } catch (e) {}
+      }
 
       // Your images (folder: img/)
       var ITEMS = [
@@ -251,7 +261,7 @@ function kcClearState() {
         { id:'peacock',    label:'peacock',    img:'img/Peacock.png' },
       ];
 
-      // per-item scores (initialized to 0)
+      // scores
       var SCORES = {};
       ITEMS.forEach(function(it){ SCORES[it.id] = 0; });
       ITEMS.forEach(function(it){ try { window[it.id + 'Score'] = 0; } catch(e){} });
@@ -262,17 +272,17 @@ function kcClearState() {
         try { window[itemId + 'Score'] = score; } catch(e){}
       }
 
-function cssPxVar(name, fallback) {
-  var val = getComputedStyle(document.documentElement).getPropertyValue(name);
-  if (!val) return fallback;
-  return parseFloat(val);
-}
+      function cssPxVar(name, fallback) {
+        var val = getComputedStyle(document.documentElement).getPropertyValue(name);
+        if (!val) return fallback;
+        return parseFloat(val);
+      }
 
-// Read responsive CSS vars so JS placement matches what is on screen
-var BOARD_SIZE   = cssPxVar('--size', 820);
-var WHITE_MARGIN = cssPxVar('--white-margin', 240);
-var ORANGE_BAND = cssPxVar('--orange-band', 120);
-var GREEN_BAND  = cssPxVar('--green-band', 24);
+      // Read responsive CSS vars so JS placement matches what is on screen
+      var BOARD_SIZE   = cssPxVar('--size', 820);
+      var WHITE_MARGIN = cssPxVar('--white-margin', 240);
+      var ORANGE_BAND  = cssPxVar('--orange-band', 120);
+      var GREEN_BAND   = cssPxVar('--green-band', 24);
 
       function computeRadii(boardEl) {
         boardEl = boardEl || document.getElementById('board');
@@ -297,739 +307,4 @@ var GREEN_BAND  = cssPxVar('--green-band', 24);
       // ======= HELPERS =======
       function showError(msg) {
         try {
-          var target = document.getElementById('jspsych-target') || document.body;
-          var box = document.getElementById('kc-error-box');
-          if (!box) {
-            box = document.createElement('div');
-            box.id = 'kc-error-box';
-            box.style.position = 'fixed';
-            box.style.left = '12px';
-            box.style.right = '12px';
-            box.style.top = '12px';
-            box.style.background = '#ffecec';
-            box.style.border = '1px solid #ffb5b5';
-            box.style.padding = '10px';
-            box.style.zIndex = 99999;
-            box.style.maxHeight = '40vh';
-            box.style.overflow = 'auto';
-            target.appendChild(box);
-          }
-          var p = document.createElement('pre'); p.style.margin = '0'; p.textContent = msg;
-          box.appendChild(p);
-        } catch (e) { console.error('showError failed', e); }
-      }
-
-      window.addEventListener('error', function(ev){
-        console.error('Global error', ev.error || ev.message, ev);
-        try { showError('Error: ' + (ev.error && ev.error.message ? ev.error.message : ev.message)); } catch(e){}
-      });
-
-      // ======= LABEL / CLICK HIGHLIGHT HELPERS (NEW) =======
-      function ensureLabel(el, labelText) {
-        if (!el) return;
-        var badge = el.querySelector('.kc-label');
-        if (!badge) {
-          badge = document.createElement('div');
-          badge.className = 'kc-label';
-          el.appendChild(badge);
-        }
-        badge.textContent = labelText || '';
-      }
-
-      function clearAllSelected() {
-        document.querySelectorAll('.tile.selected, .item.selected').forEach(function(x){
-          x.classList.remove('selected');
-        });
-      }
-
-      function attachHoverAndClickLabel(el, labelText) {
-        if (!el) return;
-
-        ensureLabel(el, labelText);
-
-        // click: select + keep label visible
-        el.addEventListener('click', function(e){
-          // ignore click if we're in the middle of dragging
-          if (el.classList.contains('dragging')) return;
-          e.stopPropagation();
-          clearAllSelected();
-          el.classList.add('selected');
-        });
-
-        // keyboard accessibility (optional): Enter/Space selects
-        el.setAttribute('tabindex', '0');
-        el.addEventListener('keydown', function(e){
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            clearAllSelected();
-            el.classList.add('selected');
-          }
-        });
-      }
-
-      // ======= SURVEY TRIAL BUILDERS =======
-      function makePidEntryTrial() {
-        return {
-          type: 'html-button-response',
-          stimulus:
-            '<div class="kc-qwrap">' +
-              '<div class="kc-qprompt">Write your Unique ID Code here:</div>' +
-              '<div class="kc-qsub">Use letters and/or numbers.</div>' +
-              '<input id="kc-pid-input" class="kc-textbox" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" />' +
-            '</div>',
-          choices: ['Continue'],
-          button_html: '<button class="jspsych-btn" id="kc-pid-continue" disabled style="display:none">%choice%</button>',
-          response_ends_trial: false,
-          data: { kc_trial: 'pid_entry' },
-          on_load: function() {
-            var input = document.getElementById('kc-pid-input');
-            var btn = document.getElementById('kc-pid-continue');
-            if (!input || !btn) return;
-
-            function update() {
-              var v = (input.value || '').trim();
-              if (v.length > 0) {
-                btn.disabled = false;
-                btn.style.display = '';
-              } else {
-                btn.disabled = true;
-                btn.style.display = 'none';
-              }
-            }
-
-            input.addEventListener('input', update);
-            input.addEventListener('keydown', function(e){
-              if (e.key === 'Enter') { e.preventDefault(); if (!btn.disabled) btn.click(); }
-            });
-
-            btn.addEventListener('click', function(){
-              participantId = (input.value || '').trim();
-              try { jsPsych.data.addProperties({ participantId: participantId }); } catch(e){}
-              try { jsPsych.finishTrial(); } catch(e){}
-            });
-
-            try { input.focus(); } catch(e){}
-          },
-          on_finish: function(data) {
-            data.participantId = participantId;
-          }
-        };
-      }
-
-      function makeImageGridQuestion(q) {
-        return {
-          type: 'html-button-response',
-          stimulus: function() {
-            var html = '';
-            html += '<div class="kc-qwrap">';
-            html +=   '<div class="kc-qprompt">' + q.prompt + '</div>';
-            html +=   '<div id="kc-options" class="' + q.gridClass + '"></div>';
-            html += '</div>';
-            return html;
-          },
-          choices: ['Continue'],
-          button_html: '<button class="jspsych-btn" id="kc-continue-btn" disabled style="display:none">%choice%</button>',
-          response_ends_trial: false,
-          data: { kc_trial: q.kc_trial, question_id: q.id },
-          on_load: function() {
-            window.KC_LAST_SELECTION = null;
-            var optsEl = document.getElementById('kc-options');
-            var contBtn = document.getElementById('kc-continue-btn');
-            if (!optsEl || !contBtn) return;
-
-            q.options.forEach(function(opt, idx){
-              var d = document.createElement('div');
-              d.className = 'kc-opt';
-              d.setAttribute('data-value', opt.value);
-
-              d.innerHTML =
-                '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
-                (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
-
-              d.addEventListener('click', function(){
-                try {
-                  var all = document.querySelectorAll('.kc-opt');
-                  all.forEach(function(x){ x.classList.remove('selected'); });
-                  d.classList.add('selected');
-                } catch(e){}
-
-                window.KC_LAST_SELECTION = {
-                  value: opt.value,
-                  label: opt.label || '',
-                  img: opt.img,
-                  option_index: idx
-                };
-
-                contBtn.disabled = false;
-                contBtn.style.display = '';
-              });
-
-              optsEl.appendChild(d);
-            });
-
-            contBtn.addEventListener('click', function(){
-              try { jsPsych.finishTrial(); } catch(e){}
-            });
-          },
-          on_finish: function(data) {
-            var sel = window.KC_LAST_SELECTION;
-            data.response = sel ? sel.value : null;
-            data.response_label = sel ? sel.label : null;
-            data.response_index = sel ? sel.option_index : null;
-            data.response_img = sel ? sel.img : null;
-
-            try {
-              var propName = q.saveAs;
-              if (propName && sel) jsPsych.data.addProperties((function(){ var o={}; o[propName]=sel.value; return o; })());
-            } catch(e){}
-          }
-        };
-      }
-
-      // ======= PAGE 1–3 (BEFORE GAME) =======
-      timeline.push(makePidEntryTrial());
-
-      timeline.push(makeImageGridQuestion({
-        id: 'nature_type',
-        kc_trial: 'nature_type',
-        saveAs: 'nature_choice',
-        prompt: 'Can you pick the picture that shows the type of nature you would like to spend the most time in?',
-        gridClass: 'kc-optgrid-3',
-        options: [
-          { value: 'nature1', img: 'img/nature1.png' },
-          { value: 'nature2', img: 'img/nature2.png' },
-          { value: 'nature3', img: 'img/nature3.png' },
-          { value: 'nature4', img: 'img/nature4.png' },
-          { value: 'nature5', img: 'img/nature5.png' },
-          { value: 'nature6', img: 'img/nature6.png' }
-        ]
-      }));
-
-      timeline.push(makeImageGridQuestion({
-        id: 'nature_importance',
-        kc_trial: 'nature_importance',
-        saveAs: 'nature_importance',
-        prompt: 'How important is nature to you?',
-        gridClass: 'kc-optgrid-5',
-        options: [
-          { value: 'Not important',           label: 'Not important',           img: 'img/NC1.png' },
-          { value: 'A little bit important',  label: 'A little bit important',  img: 'img/NC2.png' },
-          { value: 'Equally important',       label: 'Equally important',       img: 'img/NC3.png' },
-          { value: 'More important',          label: 'More important',          img: 'img/NC4.png' },
-          { value: 'Very important',          label: 'Very important',          img: 'img/NC5.png' }
-        ]
-      }));
-
-      // ======= GAME (YOUR EXISTING CIRCLES TASK) =======
-      function boardHTML () {
-        return '' +
-          '<div style="max-width:820px;margin:0 auto;padding:8px">' +
-            '<div class="wrap">' +
-              '<div class="board" id="board">' +
-                '<div class="ring red"></div>' +
-                '<div class="ring orange"></div>' +
-                '<div class="ring green"></div>' +
-                '<div id="kc-red-help" class="kc-ring-help kc-help-red" title="Play red instructions">?</div>' +
-                '<div id="kc-orange-help" class="kc-ring-help kc-help-orange" title="Play orange instructions">?</div>' +
-                '<div id="kc-green-help" class="kc-ring-help kc-help-green" title="Play green instructions">?</div>' +
-                '<audio id="kc-red-audio" preload="auto" style="display:none"><source src="mp3/red_instructions.mp3" type="audio/mp3"></audio>' +
-                '<audio id="kc-orange-audio" preload="auto" style="display:none"><source src="mp3/orange_instructions.mp3" type="audio/mp3"></audio>' +
-                '<audio id="kc-green-audio" preload="auto" style="display:none"><source src="mp3/green_instructions.mp3" type="audio/mp3"></audio>' +
-              '</div>' +
-              '<div class="start-strip">' +
-                '<div class="tiles" id="startTiles"></div>' +
-                '<div class="legend"></div>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
-      }
-
-      function setupRingHelpControl(helpId, audioId, bandOuterRadiusName, bandInnerRadiusName, angleRadians, yOffsetPixels) {
-        try {
-          var board = document.getElementById('board');
-          if (!board) return;
-          var help = document.getElementById(helpId);
-          var audio = document.getElementById(audioId);
-          var radii = computeRadii(board) || {};
-          var boardRect = board.getBoundingClientRect();
-          var cx = boardRect.width / 2;
-          var cy = boardRect.height / 2;
-          var rOuter = radii[bandOuterRadiusName] || (Math.min(boardRect.width, boardRect.height) / 2);
-          var rInner = radii[bandInnerRadiusName] || (rOuter - (ORANGE_BAND || 0));
-          var placementRadius = (rOuter + rInner) / 2;
-          var angle = (typeof angleRadians === 'number') ? angleRadians : -Math.PI/2;
-          if (help) {
-            var hw = help.offsetWidth || 44;
-            var hh = help.offsetHeight || 44;
-            var left = cx + (placementRadius * Math.cos(angle)) - (hw/2);
-            var top  = cy + (placementRadius * Math.sin(angle)) - (hh/2);
-            if (typeof yOffsetPixels === 'number' && yOffsetPixels !== 0) top = top + yOffsetPixels;
-            help.style.left = Math.round(left) + 'px';
-            help.style.top  = Math.round(top) + 'px';
-          }
-          if (help && audio) {
-            help.addEventListener('click', function(){
-              try {
-                var p = audio.play();
-                if (p && p.then) p.catch(function(){ try { new Audio(audio.querySelector('source').src).play(); } catch(e){} });
-              } catch (e) { try { new Audio(audio.querySelector('source').src).play(); } catch(e){} }
-            });
-          }
-        } catch (e) { console.error('setupRingHelpControl failed for', helpId, e); }
-      }
-
-      function setupAllRingHelpControls() {
-        setupRingHelpControl('kc-red-help', 'kc-red-audio', 'rRed', 'rOrange', -Math.PI/2);
-        setupRingHelpControl('kc-orange-help', 'kc-orange-audio', 'rOrange', 'rGreen', -Math.PI/2);
-        setupRingHelpControl('kc-green-help', 'kc-green-audio', 'rGreen', 'rGreen', -Math.PI/2, 40);
-      }
-
-      function placeStartTiles () {
-        var board = document.getElementById('board');
-        if (!board) return;
-
-        var existing = board.querySelectorAll('.tile-placeholder');
-        existing.forEach(function(el){ try { el.parentNode.removeChild(el); } catch(e){} });
-
-        var boardRect = board.getBoundingClientRect();
-        var boardW = boardRect.width || BOARD_SIZE;
-        var boardH = boardRect.height || BOARD_SIZE;
-        var cx = boardW / 2;
-        var cy = boardH / 2;
-        var radii = computeRadii(board);
-        var rRed = radii && radii.rRed ? radii.rRed : ((Math.min(boardW, boardH) - WHITE_MARGIN)/2);
-        var boardRadius = Math.min(boardW, boardH) / 2;
-
-        var tileW = 110, tileH = 110;
-        var tileRadius = Math.max(tileW, tileH) / 2.5;
-
-// Place tiles OUTSIDE the red ring, in the outer white margin area
-// rRed is the red ring radius; we add an offset into the white area
-var outerGap = Math.max(18, Math.min(WHITE_MARGIN * 0.45, 90)); // tweak if you want
-var placementRadius = rRed + tileRadius + outerGap;
-
-        var n = ITEMS.length;
-        var angleStep = (Math.PI * 2) / n;
-
-        ITEMS.forEach(function (it, i) {
-          var angle = -Math.PI/2 + (i * angleStep);
-          var left = cx + (placementRadius * Math.cos(angle)) - (tileW/2);
-          var top  = cy + (placementRadius * Math.sin(angle)) - (tileH/2);
-
-          var placeholder = document.createElement('div');
-          placeholder.className = 'tile-placeholder';
-          placeholder.id = 'ph-' + it.id;
-          placeholder.style.width = tileW + 'px';
-          placeholder.style.height = tileH + 'px';
-          placeholder.style.pointerEvents = 'auto';
-          placeholder.style.position = 'absolute';
-          placeholder.style.left = Math.round(left) + 'px';
-          placeholder.style.top = Math.round(top) + 'px';
-          placeholder.style.zIndex = 200001;
-          board.appendChild(placeholder);
-
-          var t = document.createElement('div');
-          t.className = 'tile';
-          t.id = 'tile-' + it.id;
-          t.setAttribute('data-id', it.id);
-
-          if (it.img) {
-            var im = document.createElement('img');
-            im.src = it.img; im.alt = it.label; im.draggable = false; t.appendChild(im);
-          } else {
-            t.textContent = it.label;
-          }
-          t.style.touchAction = 'none';
-
-          // NEW: hover label + click-to-pin
-          attachHoverAndClickLabel(t, it.label);
-
-          placeholder.appendChild(t);
-          board.appendChild(placeholder);
-          enableDrag(t, board);
-        });
-
-        try { setTimeout(setupAllRingHelpControls, 20); } catch(e){}
-      }
-
-      function enableDrag (el, board) {
-        var ox=0, oy=0, dragging=false;
-        var original = {};
-        var dragEl = null;
-
-        function clearRingHighlights() {
-          var rings = board.querySelectorAll('.ring');
-          rings.forEach(function(r){ r.classList.remove('active'); });
-        }
-
-        function down (e) {
-          var p = e.touches ? e.touches[0] : e;
-          dragging = true; el.classList.add('dragging');
-          e.preventDefault();
-
-          clearRingHighlights();
-
-          // clear "pinned" selection on pick-up (optional; remove if you want it to stay selected)
-          try { el.classList.remove('selected'); } catch(e){}
-
-          original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '')));
-          original.parent = original.placeholder;
-          original.id = el.id;
-
-          var elRect = el.getBoundingClientRect();
-          ox = p.clientX - elRect.left; oy = p.clientY - elRect.top;
-
-          try {
-            el.style.width = elRect.width + 'px';
-            el.style.height = elRect.height + 'px';
-            el.style.position = 'fixed';
-            el.style.left = (p.clientX - ox) + 'px';
-            el.style.top = (p.clientY - oy) + 'px';
-            el.style.zIndex = 99999;
-            el.style.pointerEvents = 'none';
-            try { if (original.parent && original.parent.contains(el)) original.parent.removeChild(el); } catch(e){}
-            document.body.appendChild(el);
-            dragEl = el;
-          } catch (err) { console.error('move-on-pickup failed', err); }
-
-          window.addEventListener('pointermove', move);
-          window.addEventListener('pointerup', up, { once:true });
-        }
-
-        function move (e) {
-          if (!dragging || !dragEl) return;
-          var p = e.touches ? e.touches[0] : e;
-          dragEl.style.left = (p.clientX - ox) + 'px';
-          dragEl.style.top  = (p.clientY - oy) + 'px';
-
-          var boardRect = board.getBoundingClientRect();
-          var elRect = dragEl.getBoundingClientRect();
-          var centerX = elRect.left + elRect.width/2;
-          var centerY = elRect.top + elRect.height/2;
-          var cx = boardRect.left + boardRect.width/2;
-          var cy = boardRect.top + boardRect.height/2;
-          var dx = centerX - cx, dy = centerY - cy;
-          var dist = Math.sqrt(dx*dx + dy*dy);
-
-          var radii = computeRadii(board);
-          clearRingHighlights();
-          if (dist <= radii.rGreen)       { var ring = board.querySelector('.ring.green');  if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rOrange) { var ring = board.querySelector('.ring.orange'); if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rRed)    { var ring = board.querySelector('.ring.red');    if (ring) ring.classList.add('active'); }
-        }
-
-        function up (e) {
-          dragging = false;
-          window.removeEventListener('pointermove', move);
-          if (!dragEl) return;
-
-          var boardRect = board.getBoundingClientRect();
-          var elRect = dragEl.getBoundingClientRect();
-          var centerX = elRect.left + elRect.width/2;
-          var centerY = elRect.top + elRect.height/2;
-          var cx = boardRect.left + boardRect.width/2;
-          var cy = boardRect.top + boardRect.height/2;
-          var dx = centerX - cx, dy = centerY - cy;
-          var dist = Math.sqrt(dx*dx + dy*dy);
-
-          var radii = computeRadii(board);
-          var droppedIn = false; var which = null;
-          if (dist <= radii.rGreen)        { droppedIn = true; which = 'green'; }
-          else if (dist <= radii.rOrange)  { droppedIn = true; which = 'orange'; }
-          else if (dist <= radii.rRed)     { droppedIn = true; which = 'red'; }
-
-          var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '');
-
-          if (droppedIn) {
-            var left = elRect.left - boardRect.left;
-            var top  = elRect.top  - boardRect.top;
-
-            el.classList.add('item');
-            el.style.position = 'absolute';
-            el.style.left = left + 'px';
-            el.style.top  = top  + 'px';
-            el.style.zIndex = '';
-            el.style.pointerEvents = '';
-            el.id = 'item-' + dataId;
-            el.setAttribute('data-id', dataId);
-            el.style.background = 'transparent';
-
-            // ensure label exists even after moving into board
-            var it = ITEMS.find(function(x){ return x.id === dataId; });
-            attachHoverAndClickLabel(el, (it && it.label) ? it.label : dataId);
-
-            board.appendChild(el);
-
-            var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
-            setItemScore(dataId, scoreVal);
-
-            clearRingHighlights();
-            var ring = board.querySelector('.ring.' + which);
-            if (ring) ring.classList.add('active');
-          } else {
-            try {
-              el.classList.remove('item');
-              el.classList.remove('selected'); // optional: clear pinned on return
-              el.style.position = '';
-              el.style.left = '';
-              el.style.top = '';
-              el.style.width = '';
-              el.style.height = '';
-              el.style.pointerEvents = '';
-              if (original.parent) original.parent.appendChild(el);
-            } catch (err) { console.error('restore failed', err); }
-            setItemScore(dataId, 0);
-          }
-
-          dragEl.classList.remove('dragging');
-          dragEl = null;
-        }
-
-        el.addEventListener('pointerdown', down);
-      }
-
-      // ======= INSTRUCTIONS (GAME) =======
-      var instructions = {
-        type: 'html-button-response',
-        stimulus:
-          '<div style="max-width:820px">' +
-            '<h2>Welcome to the circles game!</h2>' +
-            '<img src="img/instructions_page.png" alt="Instructions" style="width:100%;height:auto;margin-top:8px;border-radius:8px" />' +
-            '<audio id="kc-welcome-audio" preload="auto" controls style="width:100%;margin-top:8px;display:block">' +
-              '<source type="audio/mp3" src="mp3/Circles_game_instructions.mp3">' +
-              'Your browser does not support the audio element.' +
-            '</audio>' +
-            '<div id="kc-instr-status" style="margin-top:12px;font-weight:600;">Please play and listen to the audio — the green flag will appear when it finishes.</div>' +
-          '</div>',
-        button_html: '<button class="jspsych-btn flag-btn"><span class="sr-only">%choice%</span><svg class="kc-flag-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M0 0h24v24H0z" fill="none"/><path fill="#28a745" d="M4 3h2v18H4zM6 3c4 0 4 2 8 2s4-2 8-2v9c-4 0-4 2-8 2s-4-2-8-2V3z"/></svg></button>',
-        choices: ['I am ready!'],
-        on_load: function() {
-          try {
-            var btn = document.querySelector('#jspsych-target .jspsych-btn.flag-btn');
-            var statusEl = document.getElementById('kc-instr-status');
-            if (btn) { btn.style.display = 'none'; btn.disabled = true; }
-
-            var audio = document.getElementById('kc-welcome-audio');
-            var revealed = false;
-            function reveal() {
-              if (revealed) return; revealed = true;
-              try {
-                if (btn) { btn.style.display = ''; btn.disabled = false; }
-                if (statusEl) statusEl.textContent = 'When you are ready to continue, click the green flag.';
-              } catch(e){}
-            }
-            if (audio) {
-              if (audio.ended) { reveal(); return; }
-              audio.addEventListener('ended', function(){ reveal(); });
-              try { if (audio.paused && statusEl) statusEl.textContent = 'Press play to hear instructions.'; } catch(e){}
-            } else {
-              if (statusEl) statusEl.textContent = 'Audio not available — please contact the researcher.';
-            }
-          } catch (e) { console.error('instructions on_load failed', e); }
-        }
-      };
-      timeline.push(instructions);
-
-      // ======= GAME TRIAL =======
-      var place_items_trial = {
-        type: 'html-button-response',
-        stimulus: function () { return boardHTML(); },
-        choices: ['I am done!'],
-        button_html: '<button class="jspsych-btn">%choice%</button>',
-        on_load: function () {
-          try {
-            placeStartTiles();
-            
-window.addEventListener('resize', function(){
-  BOARD_SIZE   = cssPxVar('--size', 820);
-  WHITE_MARGIN = cssPxVar('--white-margin', 240);
-  ORANGE_BAND  = cssPxVar('--orange-band', 120);
-  GREEN_BAND   = cssPxVar('--green-band', 24);
-  placeStartTiles();
-});
-
-            // NEW: clicking the empty board clears pinned selection
-            var board = document.getElementById('board');
-            if (board) {
-              board.addEventListener('click', function(){
-                clearAllSelected();
-              });
-            }
-
-            window.kc_monitor_interval = window.kc_monitor_interval || setInterval(function(){
-              try {
-                var btn = document.querySelector('#jspsych-target .jspsych-btn');
-                var placed = document.querySelectorAll('#board .item').length;
-                if (btn) {
-                  if (placed >= ITEMS.length) { btn.disabled = false; btn.style.display = ''; }
-                  else { btn.disabled = true; btn.style.display = 'none'; }
-                }
-              } catch (e) {}
-            }, 200);
-
-            try {
-              var _b = document.querySelector('#jspsych-target .jspsych-btn');
-              if (_b) { _b.disabled = true; _b.style.display = 'none'; }
-            } catch(e){}
-          } catch (e) { console.error('place_items_trial on_load error', e); }
-        },
-        on_finish: function (data) {
-          data.kc_trial = 'circles_game';
-          data.scores = Object.assign({}, SCORES);
-          data.total_score = ITEMS.reduce(function(acc,it){ return acc + (SCORES[it.id] || 0); }, 0);
-        }
-      };
-      timeline.push(place_items_trial);
-
-      // ======= GOOGLE SHEETS POST =======
-      function postResultsToServer(endpointUrl, secretToken, payload) {
-        var body = Object.assign({}, payload);
-        if (secretToken) body.secret = secretToken;
-        return fetch(endpointUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(body)
-        }).then(function(resp){
-          if (!resp.ok) {
-            return resp.text().then(function(txt){
-              throw new Error('HTTP ' + resp.status + ' - ' + txt);
-            }).catch(function(){ throw new Error('HTTP ' + resp.status); });
-          }
-          return resp.json().catch(function(){ return { status: 'ok' }; });
-        });
-      }
-
-      var start_post = {
-        type: 'call-function',
-        func: function() {
-          window.KC_SUBMIT_DONE = false;
-          window.KC_SUBMIT_ERROR = null;
-
-          try {
-            var endpoint = window.KC_REMOTE_ENDPOINT || '';
-            var secret = window.KC_REMOTE_SECRET || '';
-
-            var scoresObj = Object.assign({}, SCORES);
-            var total = ITEMS.reduce(function(acc,it){ return acc + (scoresObj[it.id] || 0); }, 0);
-
-            var props = {};
-            try { props = jsPsych.data.get().values()[0] || {}; } catch(e){}
-
-            var payload = {
-              participantId: participantId,
-              nature_choice: props.nature_choice || null,
-              nature_importance: props.nature_importance || null,
-              item_ids: ITEMS.map(function(it){ return it.id; }),
-              scores: scoresObj,
-              total: total
-            };
-
-            if (!endpoint || endpoint.indexOf('PASTE_YOUR_NEW_APPS_SCRIPT_WEBAPP_URL_HERE') !== -1) {
-              window.KC_SUBMIT_DONE = true;
-              window.KC_SUBMIT_ERROR = 'No Google Sheets endpoint set.';
-              showError('No Google Sheets endpoint set. Update window.KC_REMOTE_ENDPOINT at the top of index.html');
-              return;
-            }
-
-            postResultsToServer(endpoint, secret, payload).then(function(){
-              window.KC_SUBMIT_DONE = true;
-              window.KC_SUBMIT_ERROR = null;
-            }).catch(function(err){
-              window.KC_SUBMIT_DONE = true;
-              window.KC_SUBMIT_ERROR = (err && err.message) ? err.message : String(err);
-              showError('Submission failed: ' + window.KC_SUBMIT_ERROR);
-            });
-          } catch (e) {
-            window.KC_SUBMIT_DONE = true;
-            window.KC_SUBMIT_ERROR = e && e.message ? e.message : String(e);
-            showError('Submission exception: ' + window.KC_SUBMIT_ERROR);
-          }
-        }
-      };
-      timeline.push(start_post);
-
-      var wait_for_submit = {
-        type: 'html-keyboard-response',
-        stimulus: '<div style="max-width:820px;text-align:center">' +
-                   '<div style="margin-top:16px;font-weight:700;font-size:1.5rem;">Saving your choices…</div>' +
-                   '<div style="margin-top:8px;font-size:1rem;opacity:0.95;">Please wait. This will only take a moment.</div>' +
-                 '</div>',
-        choices: [],
-        on_load: function() {
-          var start = Date.now();
-          var timeout = 20000;
-          var iv = setInterval(function(){
-            if (window.KC_SUBMIT_DONE) {
-              clearInterval(iv);
-              setTimeout(function(){ try { jsPsych.finishTrial(); } catch(e){} }, 200);
-              return;
-            }
-            if (Date.now() - start > timeout) {
-              clearInterval(iv);
-              showError('Submission timed out after ' + (timeout/1000) + 's — continuing.');
-              try { jsPsych.finishTrial(); } catch(e){}
-            }
-          }, 200);
-        }
-      };
-      timeline.push(wait_for_submit);
-
-      var final_thanks = {
-        type: 'html-button-response',
-        stimulus: function() {
-          var ok = window.KC_SUBMIT_DONE && !window.KC_SUBMIT_ERROR;
-          return '' +
-            '<div style="max-width:820px;text-align:center">' +
-              '<div style="margin-top:16px;font-weight:800;font-size:1.6rem;">All done!</div>' +
-              (ok
-                ? '<div style="margin-top:10px;font-size:1rem;">Your choices have been saved. Thank you!</div>'
-                : '<div style="margin-top:10px;font-size:1rem;color:#c21f1f;">Your choices may not have saved. Please refresh the page.</div>'
-              ) +
-            '</div>';
-        },
-        choices: ['Finish'],
-        button_html: '<button class="jspsych-btn kc-continue-btn">%choice%</button>'
-      };
-      timeline.push(final_thanks);
-
-      // ======= APPLY RESUME (if valid) =======
-var kc_state = kcLoadState();
-if (kc_state && typeof kc_state.next_trial === 'number') {
-  // restore participantId + scores
-  participantId = kc_state.participantId || participantId;
-  if (kc_state.scores) {
-    Object.keys(kc_state.scores).forEach(function(k){
-      SCORES[k] = kc_state.scores[k];
-    });
-  }
-
-  // restore jsPsych properties so your payload stays consistent
-  try {
-    if (kc_state.participantId) jsPsych.data.addProperties({ participantId: kc_state.participantId });
-    if (kc_state.props) jsPsych.data.addProperties(kc_state.props);
-  } catch(e) {}
-
-  // start from where they left off
-  timeline = timeline.slice(kc_state.next_trial);
-}
-
-
-      // ======= INIT =======
-jsPsych.init({
-  display_element: 'jspsych-target',
-  timeline: timeline,
-  default_iti: 0,
-  auto_preload: false,
-
-  on_trial_finish: function() {
-    kcSaveState();
-  },
-
-  on_finish: function() {
-    // once fully finished, clear resume so they don't jump back in later
-    kcClearState();
-  }
-});
-    </script>
-  </body>
-</html>
+          var target = document.getElemen
