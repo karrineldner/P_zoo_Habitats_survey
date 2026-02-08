@@ -3,128 +3,78 @@
   <head>
     <title>Habitats Survey</title>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
     <!-- jsPsych 6.1.0 core + plugins -->
     <script src="jspsych-6.1.0/jspsych.js"></script>
     <script src="jspsych-6.1.0/plugins/jspsych-html-keyboard-response.js"></script>
     <script src="jspsych-6.1.0/plugins/jspsych-html-button-response.js"></script>
     <script src="jspsych-6.1.0/plugins/jspsych-call-function.js"></script>
-    <link rel="stylesheet" href="jspsych-6.1.0/css/jspsych.css" />
+    <link rel="stylesheet" href="jspsych-6.1.0/css/jspsych.css">
 
     <style>
-      /* =========================
-         RESPONSIVE LAYOUT SETTINGS
-         ========================= */
+      /* ===== Responsive board sizing (keeps ring ratios identical) ===== */
       :root{
-        /* Board scales with viewport; capped so it still looks good on desktop */
+        /* Board scales to fit viewport but won't exceed original design size */
         --size: min(92vmin, 920px);
 
-        /* keep your existing relative ring proportions (outer white margin etc) */
-        --white-margin: 240px; /* this stays "as designed" relative to the original 920px design */
-        --red-diameter: calc(var(--size) - (var(--white-margin) * (var(--size) / 920px)));
+        /* Keep same proportion as 240/920 so ring geometry ratios stay constant */
+        --white-margin: calc(var(--size) * 0.2608695652);
+
+        --red-diameter: calc(var(--size) - var(--white-margin));
         --band: calc(var(--red-diameter) / 6);
         --orange-band: calc(var(--band) * 0.8);
         --green-band: calc(var(--band) * 0.8);
-
-        /* survey sizing */
-        --survey-max: 1100px;
       }
 
       html, body { background:#fff; color:#000; margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-      #jspsych-target { display:grid; place-items:center; min-height:100vh; }
+      body { overflow-x:hidden; }
 
-      /* ======= GAME LAYOUT ======= */
-      .wrap {
+      /* Let content scroll on short screens (prevents prompt getting cut off) */
+      #jspsych-target {
+        min-height:100vh;
         display:flex;
-        gap:24px;
+        justify-content:center;
         align-items:flex-start;
-        padding:16px;
-        width: min(96vw, 1300px);
+        padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+        box-sizing:border-box;
       }
 
-      /* On narrow screens / portrait tablets, stack strip underneath */
-      @media (max-width: 980px) {
-        .wrap { flex-direction: column; align-items:center; }
-        .start-strip { width: min(92vw, 520px) !important; }
-      }
-
-      .board {
-        position:relative;
-        width:var(--size);
-        height:var(--size);
-        background:#fff;
-        border-radius:50%;
-        display:grid;
-        place-items:center;
-        overflow:visible;
-        flex: 0 0 auto;
-      }
-
+      /* ===== Circles game layout ===== */
+      .wrap { display:flex; gap:24px; align-items:flex-start; padding:16px; flex-wrap:wrap; justify-content:center; }
+      .board { position:relative; width:var(--size); height:var(--size); background:#fff; border-radius:50%; display:grid; place-items:center; overflow:visible; }
       .ring { position:absolute; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; }
       .ring.red    { background:#c21f1f; width:var(--red-diameter); height:var(--red-diameter); z-index:1; }
       .ring.orange { background:#ff7a21; width:calc(var(--red-diameter) - (2 * var(--orange-band))); height:calc(var(--red-diameter) - (2 * var(--orange-band))); z-index:1; }
       .ring.green  { background:#1aaa1a; width:calc(var(--red-diameter) - (2 * var(--orange-band)) - (2 * var(--green-band))); height:calc(var(--red-diameter) - (2 * var(--orange-band)) - (2 * var(--green-band))); z-index:1; }
       .center { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:calc(var(--red-diameter) - (6 * var(--band))); height:calc(var(--red-diameter) - (6 * var(--band))); border-radius:50%; background:var(--board-bg, #fff); z-index:1; }
 
-      .kc-ring-help {
-        position:absolute; width:44px; height:44px; border-radius:50%;
-        background:rgba(255,255,255,0.95); border:2px solid rgba(0,0,0,0.08);
-        display:flex; align-items:center; justify-content:center;
-        font-weight:700; font-size:20px; cursor:pointer;
-        z-index:100000; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-      }
+      .ring.active { filter: brightness(1.25); box-shadow: 0 0 18px rgba(0,0,0,0.25) inset; }
+
+      .kc-ring-help { position:absolute; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.95); border:2px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; cursor:pointer; z-index:100000; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
       .kc-ring-help.kc-help-red    { color:#c21f1f; }
       .kc-ring-help.kc-help-orange { color:#ff7a21; }
       .kc-ring-help.kc-help-green  { color:#1aaa1a; }
 
-      .start-strip { width:220px; flex: 0 0 auto; }
-      .tiles {
-        display:flex; flex-wrap:wrap; gap:8px;
-        max-height: calc(var(--size) - 20px);
-        overflow:auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      /* tiles/items scale gently with board size (keeps relative design but more iPad-friendly) */
-      .tile, .item { position: relative; }
-      .tile {
-        width: clamp(84px, calc(var(--size) * 0.12), 110px);
-        height: clamp(84px, calc(var(--size) * 0.12), 110px);
-        border-radius:14px;
-        background:transparent;
-        display:flex; align-items:center; justify-content:center;
-        cursor:grab; touch-action:none;
-        z-index:300001;
-        font-size: 26px; font-weight:700;
-      }
+      .start-strip { width:220px; flex: 0 0 220px; }
+      .tiles { display:flex; flex-wrap:wrap; gap:8px; max-height:calc(var(--size) - 20px); overflow:auto; justify-content:center; }
+      .tile { width:100px; height:100px; border-radius:14px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none; position: relative; z-index:300001; font-size: 26px; font-weight:700; }
       .tile img { width:100%; height:100%; object-fit:contain; border-radius:12px; pointer-events:none; border:0; outline:0; }
 
-      .ring.active { filter: brightness(1.25); box-shadow: 0 0 18px rgba(0,0,0,0.25) inset; }
-
-      .item {
-        position:absolute;
-        width: clamp(104px, calc(var(--size) * 0.155), 130px);
-        height: clamp(104px, calc(var(--size) * 0.155), 130px);
-        border-radius:14px;
-        background:transparent;
-        display:flex; align-items:center; justify-content:center;
-        cursor:grab; user-select:none;
-        z-index:300000;
-      }
+      .item { position:absolute; width:130px; height:130px; border-radius:14px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none; z-index:300000; }
       .item.dragging { opacity:.85; cursor:grabbing; }
       .item img { width:100%; height:100%; object-fit:contain; border-radius:12px; border:0; outline:0; }
 
-      .kc-tooltip { position:fixed !important; pointer-events:none !important; background:rgba(0,0,0,0.85); color:#fff; padding:6px 8px; border-radius:6px; z-index:2147483647 !important; transform:translate(8px,8px); will-change: transform; }
+      .tile-placeholder { width:130px; height:130px; display:inline-block; vertical-align:top; border-radius:14px; background:transparent; }
 
-      .tile-placeholder {
-        width: clamp(104px, calc(var(--size) * 0.155), 130px);
-        height: clamp(104px, calc(var(--size) * 0.155), 130px);
-        display:inline-block;
-        vertical-align:top;
-        border-radius:14px;
-        background:transparent;
+      /* Reflow on portrait/narrow screens: strip goes below board */
+      @media (max-width: 1000px){
+        .wrap{ flex-direction:column; align-items:center; }
+        .start-strip{ width: min(92vw, 680px); flex: 0 0 auto; }
+        .tiles{ max-height: 240px; }
       }
 
+      /* ===== Buttons ===== */
       .jspsych-btn { background:#28a745; color:#fff; border-radius:8px; border: none; padding: 12px 18px; font-size:18px; min-width:140px; cursor:pointer; }
       .jspsych-content { color:#000; }
       .kc-continue-btn { background: #28a745 !important; color: #fff !important; border: none; }
@@ -150,53 +100,40 @@
       }
       .jspsych-btn.flag-btn:hover { transform: translateY(-1px); }
 
-      /* =========================
-         SURVEY QUESTION LAYOUT
-         (bigger images + responsive)
-         ========================= */
+      /* ===== Survey page styles (UPDATED to make images bigger) ===== */
       .kc-qwrap {
-        width: min(94vw, var(--survey-max));
+        width: min(1100px, 96vw);
         margin: 0 auto;
-        padding: 10px 10px 4px 10px;
       }
       .kc-qprompt {
-        font-size: clamp(1.25rem, 2.6vw, 1.9rem);
+        font-size: clamp(1.2rem, 2.6vw, 1.8rem);
         font-weight: 800;
         margin: 0 0 14px 0;
-        line-height: 1.15;
+        line-height: 1.2;
       }
       .kc-qsub { font-size: 1rem; opacity: 0.9; margin: 0 0 14px 0; }
 
-      .kc-textbox {
-        width: 100%;
-        max-width: 520px;
-        font-size: 1.2rem;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 2px solid rgba(0,0,0,0.18);
-        outline: none;
-      }
-      .kc-textbox:focus { border-color: rgba(40,167,69,0.9); box-shadow: 0 0 0 4px rgba(40,167,69,0.14); }
+      /* Keep the prompt visible and give the options room */
+      #kc-options { margin-top: 10px; }
 
+      /* Page 2: fixed 3 columns but responsive (still 3 on wide screens) */
       .kc-optgrid-3 {
-        display:grid;
+        display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: clamp(10px, 1.8vw, 16px);
-      }
-      @media (max-width: 760px) {
-        .kc-optgrid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        gap: 14px;
       }
 
+      /* Page 3: 5 options, responsive */
       .kc-optgrid-5 {
-        display:grid;
+        display: grid;
         grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-        gap: clamp(10px, 1.8vw, 16px);
+        gap: 14px;
       }
 
       .kc-opt {
         border: 2px solid rgba(0,0,0,0.12);
         border-radius: 14px;
-        padding: clamp(10px, 1.8vw, 14px);
+        padding: 12px;
         cursor: pointer;
         user-select: none;
         background: #fff;
@@ -207,20 +144,31 @@
         border-color: rgba(40,167,69,0.9);
         box-shadow: 0 0 0 4px rgba(40,167,69,0.16);
       }
+
+      /* BIGGER IMAGES:
+         - uses viewport height while ensuring prompt isn't likely to be cut
+         - works for both 3-grid and 5-grid */
       .kc-opt img {
         width: 100%;
-        height: clamp(150px, 24vh, 280px); /* BIGGER and uses screen height */
+        height: clamp(170px, 26vh, 320px);
         object-fit: contain;
         display:block;
       }
-      .kc-optlabel {
-        margin-top: 10px;
-        font-size: clamp(1.0rem, 1.8vw, 1.15rem);
-        font-weight: 700;
-        text-align: center;
+      .kc-optlabel { margin-top: 10px; font-size: 1.05rem; font-weight: 700; text-align: center; }
+
+      /* On very short screens, reduce image height so prompt/buttons stay visible */
+      @media (max-height: 700px){
+        .kc-opt img { height: clamp(140px, 22vh, 260px); }
+      }
+
+      /* On narrow screens, allow 3-grid to become 2 columns if needed */
+      @media (max-width: 560px){
+        .kc-optgrid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
 
       /* ===== LABEL POPUP + CLICK HIGHLIGHT ===== */
+      .tile, .item { position: relative; }
+
       .tile:hover .kc-label,
       .item:hover .kc-label { opacity: 1; transform: translate(-50%, 0); }
 
@@ -233,21 +181,21 @@
       }
 
       .kc-label {
-        position:absolute;
-        left:50%;
-        top:-10px;
+        position: absolute;
+        left: 50%;
+        top: -10px;
         transform: translate(-50%, -6px);
         background: rgba(0,0,0,0.85);
-        color:#fff;
-        padding:6px 10px;
-        border-radius:10px;
-        font-size:16px;
-        font-weight:800;
-        white-space:nowrap;
-        pointer-events:none;
-        opacity:0;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 800;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
         transition: opacity 120ms ease, transform 120ms ease;
-        z-index:999999;
+        z-index: 999999;
       }
     </style>
   </head>
@@ -262,41 +210,7 @@
     <div id="jspsych-target"></div>
 
     <script>
-      // =========================
-      // PERSISTENCE (10 min)
-      // =========================
-      var KC_STATE_KEY = 'KC_HABITATS_STATE_V1';
-      var KC_TTL_MS = 10 * 60 * 1000;
-
-      function nowMs(){ return Date.now(); }
-
-      function loadKCState() {
-        try {
-          var raw = localStorage.getItem(KC_STATE_KEY);
-          if (!raw) return null;
-          var st = JSON.parse(raw);
-          if (!st || !st.ts) return null;
-          if ((nowMs() - st.ts) > KC_TTL_MS) return null;
-          return st;
-        } catch (e) { return null; }
-      }
-
-      function saveKCState(partial) {
-        try {
-          var cur = loadKCState() || {};
-          var next = Object.assign({}, cur, partial);
-          next.ts = nowMs();
-          localStorage.setItem(KC_STATE_KEY, JSON.stringify(next));
-        } catch (e) {}
-      }
-
-      function clearKCState() {
-        try { localStorage.removeItem(KC_STATE_KEY); } catch(e){}
-      }
-
-      // =========================
-      // GLOBALS / CONFIG
-      // =========================
+      // ======= GLOBALS / CONFIG =======
       var timeline = [];
       var participantId = null;
 
@@ -324,16 +238,9 @@
         { id:'peacock',    label:'peacock',    img:'img/Peacock.png' },
       ];
 
-      var BOARD_SIZE = 820;   // still used as fallback in calculations
-      var WHITE_MARGIN = 240; // outer white band width (design reference)
-
-      // per-item scores
       var SCORES = {};
       ITEMS.forEach(function(it){ SCORES[it.id] = 0; });
       ITEMS.forEach(function(it){ try { window[it.id + 'Score'] = 0; } catch(e){} });
-
-      // placements in board coordinates: { itemId: { which, left, top } }
-      window.KC_PLACEMENTS = window.KC_PLACEMENTS || {};
 
       function setItemScore(itemId, score) {
         if (!(itemId in SCORES)) SCORES[itemId] = 0;
@@ -347,8 +254,11 @@
         return parseFloat(val);
       }
 
-      var ORANGE_BAND = cssPxVar('--orange-band', 120);
-      var GREEN_BAND  = cssPxVar('--green-band', 24);
+      // These are derived from CSS; we refresh them when needed
+      var BOARD_SIZE   = cssPxVar('--size', 820);
+      var WHITE_MARGIN = cssPxVar('--white-margin', 240);
+      var ORANGE_BAND  = cssPxVar('--orange-band', 120);
+      var GREEN_BAND   = cssPxVar('--green-band', 24);
 
       function computeRadii(boardEl) {
         boardEl = boardEl || document.getElementById('board');
@@ -370,9 +280,7 @@
         return { rRed: rRed, rOrange: rOrange, rGreen: rGreen };
       }
 
-      // =========================
-      // HELPERS
-      // =========================
+      // ======= HELPERS =======
       function showError(msg) {
         try {
           var target = document.getElementById('jspsych-target') || document.body;
@@ -402,7 +310,7 @@
         try { showError('Error: ' + (ev.error && ev.error.message ? ev.error.message : ev.message)); } catch(e){}
       });
 
-      // label / click highlight
+      // ======= LABEL / CLICK HIGHLIGHT HELPERS =======
       function ensureLabel(el, labelText) {
         if (!el) return;
         var badge = el.querySelector('.kc-label');
@@ -442,7 +350,7 @@
         });
       }
 
-      // randomisation helper
+      // ======= RANDOMISATION HELPERS =======
       function shuffleArray(arr) {
         for (var i = arr.length - 1; i > 0; i--) {
           var j = Math.floor(Math.random() * (i + 1));
@@ -453,52 +361,7 @@
         return arr;
       }
 
-      // play ring audio on every successful drop
-      function playRingAudio(which) {
-        var id = (which === 'red') ? 'kc-red-audio'
-               : (which === 'orange') ? 'kc-orange-audio'
-               : (which === 'green') ? 'kc-green-audio'
-               : null;
-        if (!id) return;
-
-        var audio = document.getElementById(id);
-        if (!audio) return;
-
-        try { audio.currentTime = 0; } catch(e){}
-        try {
-          var p = audio.play();
-          if (p && p.then) {
-            p.catch(function(){
-              try { new Audio(audio.querySelector('source').src).play(); } catch(e){}
-            });
-          }
-        } catch(e) {
-          try { new Audio(audio.querySelector('source').src).play(); } catch(e2){}
-        }
-      }
-
-      // checkpoint stage indices (timeline order)
-      // 0 pid, 1 nature_type, 2 nature_importance, 3 instructions, 4 game, 5 start_post, 6 wait, 7 thanks
-      function saveStage(nextIndex) {
-        saveKCState({ stage: nextIndex, participantId: participantId });
-      }
-
-      function saveSurveyAnswer(qid, value, extra) {
-        var st = loadKCState() || {};
-        var answers = st.answers || {};
-        answers[qid] = Object.assign({ value: value }, extra || {});
-        saveKCState({ answers: answers, participantId: participantId });
-      }
-
-      function getSavedAnswer(qid) {
-        var st = loadKCState();
-        if (!st || !st.answers) return null;
-        return st.answers[qid] || null;
-      }
-
-      // =========================
-      // SURVEY TRIAL BUILDERS
-      // =========================
+      // ======= SURVEY TRIAL BUILDERS =======
       function makePidEntryTrial() {
         return {
           type: 'html-button-response',
@@ -533,21 +396,9 @@
               if (e.key === 'Enter') { e.preventDefault(); if (!btn.disabled) btn.click(); }
             });
 
-            // If we already have a valid saved participantId within TTL, auto-skip this page
-            var st = loadKCState();
-            if (st && st.participantId) {
-              participantId = st.participantId;
-              try { jsPsych.data.addProperties({ participantId: participantId }); } catch(e){}
-              saveStage(1);
-              try { jsPsych.finishTrial(); } catch(e){}
-              return;
-            }
-
             btn.addEventListener('click', function(){
               participantId = (input.value || '').trim();
               try { jsPsych.data.addProperties({ participantId: participantId }); } catch(e){}
-              saveKCState({ participantId: participantId });
-              saveStage(1);
               try { jsPsych.finishTrial(); } catch(e){}
             });
 
@@ -581,40 +432,17 @@
             var contBtn = document.getElementById('kc-continue-btn');
             if (!optsEl || !contBtn) return;
 
-            // copy options
             var opts = (q.options || []).map(function(opt, i){
               var copy = Object.assign({}, opt);
               copy._orig_index = i;
               return copy;
             });
 
-            // randomise, but persist order per-question so refresh resumes identically
-            var st = loadKCState() || {};
-            st.optionOrders = st.optionOrders || {};
-            var savedOrder = st.optionOrders[q.id];
-
             if (q.randomize_options) {
-              if (savedOrder && Array.isArray(savedOrder)) {
-                // reorder opts to match savedOrder
-                var map = {};
-                opts.forEach(function(o){ map[o.value] = o; });
-                var rebuilt = [];
-                savedOrder.forEach(function(val){ if (map[val]) rebuilt.push(map[val]); });
-                // add any missing just in case
-                opts.forEach(function(o){ if (rebuilt.indexOf(o) === -1) rebuilt.push(o); });
-                opts = rebuilt;
-              } else {
-                shuffleArray(opts);
-                st.optionOrders[q.id] = opts.map(function(o){ return o.value; });
-                saveKCState({ optionOrders: st.optionOrders });
-              }
+              shuffleArray(opts);
             }
 
             window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
-
-            // restore previous answer if present
-            var prev = getSavedAnswer(q.id);
-            var prevVal = prev ? prev.value : null;
 
             opts.forEach(function(opt, displayIdx){
               var d = document.createElement('div');
@@ -624,19 +452,6 @@
               d.innerHTML =
                 '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
                 (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
-
-              if (prevVal && prevVal === opt.value) {
-                d.classList.add('selected');
-                window.KC_LAST_SELECTION = {
-                  value: opt.value,
-                  label: opt.label || '',
-                  img: opt.img,
-                  option_index: displayIdx,
-                  original_index: opt._orig_index
-                };
-                contBtn.disabled = false;
-                contBtn.style.display = '';
-              }
 
               d.addEventListener('click', function(){
                 try {
@@ -652,24 +467,6 @@
                   option_index: displayIdx,
                   original_index: opt._orig_index
                 };
-
-                // persist immediately
-                saveSurveyAnswer(q.id, opt.value, {
-                  label: opt.label || '',
-                  img: opt.img,
-                  option_index: displayIdx,
-                  original_index: opt._orig_index,
-                  option_order: window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null
-                });
-
-                // also persist jsPsych property value so final payload works even if refresh later
-                try {
-                  if (q.saveAs) {
-                    var o = {};
-                    o[q.saveAs] = opt.value;
-                    jsPsych.data.addProperties(o);
-                  }
-                } catch(e){}
 
                 contBtn.disabled = false;
                 contBtn.style.display = '';
@@ -691,19 +488,62 @@
             data.response_index = sel ? sel.option_index : null;
             data.response_original_index = sel ? sel.original_index : null;
             data.response_img = sel ? sel.img : null;
+
             data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
 
-            // stage progression happens outside when we construct timeline (we set explicitly)
+            try {
+              var propName = q.saveAs;
+              if (propName && sel) {
+                jsPsych.data.addProperties((function(){
+                  var o = {};
+                  o[propName] = sel.value;
+                  return o;
+                })());
+              }
+            } catch(e){}
           }
         };
       }
 
-      // =========================
-      // GAME HTML
-      // =========================
+      // ======= PAGE 1–3 (BEFORE GAME) =======
+      timeline.push(makePidEntryTrial());
+
+      timeline.push(makeImageGridQuestion({
+        id: 'nature_type',
+        kc_trial: 'nature_type',
+        saveAs: 'nature_choice',
+        randomize_options: true,
+        prompt: 'Pick the picture that shows the type of nature you would like to spend the most time in?',
+        gridClass: 'kc-optgrid-3',
+        options: [
+          { value: 'nature1', img: 'img/eucalypts.png' },
+          { value: 'nature2', img: 'img/city_scraper.png' },
+          { value: 'nature3', img: 'img/skyscraper_bare.png' },
+          { value: 'nature4', img: 'img/spring_WA.png' },
+          { value: 'nature5', img: 'img/Scary_forest.png' },
+          { value: 'nature6', img: 'img/Rose.png' },
+        ]
+      }));
+
+      timeline.push(makeImageGridQuestion({
+        id: 'nature_importance',
+        kc_trial: 'nature_importance',
+        saveAs: 'nature_importance',
+        prompt: 'How important is nature to you?',
+        gridClass: 'kc-optgrid-5',
+        options: [
+          { value: 'Not important',           label: 'Not important',           img: 'img/NC1.png' },
+          { value: 'A little bit important',  label: 'A little bit important',  img: 'img/NC2.png' },
+          { value: 'Equally important',       label: 'Equally important',       img: 'img/NC3.png' },
+          { value: 'More important',          label: 'More important',          img: 'img/NC4.png' },
+          { value: 'Very important',          label: 'Very important',          img: 'img/NC5.png' }
+        ]
+      }));
+
+      // ======= GAME (CIRCLES TASK) =======
       function boardHTML () {
         return '' +
-          '<div style="width:min(96vw,1300px);margin:0 auto;padding:8px">' +
+          '<div style="max-width:1200px;margin:0 auto;padding:8px;box-sizing:border-box;width:100%">' +
             '<div class="wrap">' +
               '<div class="board" id="board">' +
                 '<div class="ring red"></div>' +
@@ -723,6 +563,36 @@
               '</div>' +
             '</div>' +
           '</div>';
+      }
+
+      function playRingAudio(which) {
+        // which: 'red' | 'orange' | 'green'
+        var ids = { red: 'kc-red-audio', orange: 'kc-orange-audio', green: 'kc-green-audio' };
+        var id = ids[which];
+        if (!id) return;
+
+        try {
+          // stop all ring audios first
+          ['kc-red-audio','kc-orange-audio','kc-green-audio'].forEach(function(aid){
+            var a = document.getElementById(aid);
+            if (a) { try { a.pause(); a.currentTime = 0; } catch(e){} }
+          });
+
+          var audio = document.getElementById(id);
+          if (!audio) return;
+
+          // play from start every time
+          try { audio.currentTime = 0; } catch(e){}
+
+          var p = audio.play();
+          if (p && p.then) p.catch(function(){
+            // iOS can be picky—fallback to new Audio
+            try {
+              var src = audio.querySelector('source') ? audio.querySelector('source').src : null;
+              if (src) { var tmp = new Audio(src); tmp.play(); }
+            } catch(e){}
+          });
+        } catch(e){}
       }
 
       function setupRingHelpControl(helpId, audioId, bandOuterRadiusName, bandInnerRadiusName, angleRadians, yOffsetPixels) {
@@ -765,12 +635,13 @@
         setupRingHelpControl('kc-green-help', 'kc-green-audio', 'rGreen', 'rGreen', -Math.PI/2, 40);
       }
 
-      // =========================
-      // GAME: place tiles around board
-      // - randomises item->angle once
-      // - persists order + placements + scores
-      // =========================
       function placeStartTiles () {
+        // Refresh CSS-driven values (important on rotation)
+        BOARD_SIZE   = cssPxVar('--size', 820);
+        WHITE_MARGIN = cssPxVar('--white-margin', 240);
+        ORANGE_BAND  = cssPxVar('--orange-band', 120);
+        GREEN_BAND   = cssPxVar('--green-band', 24);
+
         var board = document.getElementById('board');
         if (!board) return;
 
@@ -782,14 +653,11 @@
         var boardH = boardRect.height || BOARD_SIZE;
         var cx = boardW / 2;
         var cy = boardH / 2;
-
         var radii = computeRadii(board);
         var rRed = radii && radii.rRed ? radii.rRed : ((Math.min(boardW, boardH) - WHITE_MARGIN)/2);
         var boardRadius = Math.min(boardW, boardH) / 2;
 
-        var tileW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--size')) * 0.12;
-        tileW = Math.max(84, Math.min(110, tileW));
-        var tileH = tileW;
+        var tileW = 110, tileH = 110;
         var tileRadius = Math.max(tileW, tileH) / 2.5;
 
         var maxR = boardRadius - tileRadius - 4;
@@ -797,31 +665,11 @@
         var preferR = rRed + (boardRadius - rRed) * 0.6;
         var placementRadius = Math.max(minR, Math.min(preferR, maxR));
 
-        // Restore or create the item order (angle assignment)
-        var st = loadKCState() || {};
-        var order = st.item_order || null;
-
-        var shuffledItems;
-        if (order && Array.isArray(order) && order.length === ITEMS.length) {
-          var map = {};
-          ITEMS.forEach(function(it){ map[it.id] = it; });
-          shuffledItems = order.map(function(id){ return map[id]; }).filter(Boolean);
-        } else {
-          shuffledItems = shuffleArray(ITEMS.slice());
-          order = shuffledItems.map(function(it){ return it.id; });
-          saveKCState({ item_order: order });
-        }
-
-        window.KC_ITEM_ORDER = order.slice();
+        var shuffledItems = shuffleArray(ITEMS.slice());
+        window.KC_ITEM_ORDER = shuffledItems.map(function(it){ return it.id; });
 
         var n = shuffledItems.length;
         var angleStep = (Math.PI * 2) / n;
-
-        // restore placements/scores if present
-        window.KC_PLACEMENTS = (st.placements && typeof st.placements === 'object') ? st.placements : (window.KC_PLACEMENTS || {});
-        if (st.scores && typeof st.scores === 'object') {
-          Object.keys(st.scores).forEach(function(k){ setItemScore(k, st.scores[k] || 0); });
-        }
 
         shuffledItems.forEach(function (it, i) {
           var angle = -Math.PI/2 + (i * angleStep);
@@ -857,39 +705,10 @@
 
           placeholder.appendChild(t);
           board.appendChild(placeholder);
-
-          // If this item had a saved placement inside a ring, restore it now
-          var pl = window.KC_PLACEMENTS[it.id];
-          if (pl && typeof pl.left === 'number' && typeof pl.top === 'number' && pl.which) {
-            t.classList.add('item');
-            t.style.position = 'absolute';
-            t.style.left = pl.left + 'px';
-            t.style.top  = pl.top  + 'px';
-            t.style.background = 'transparent';
-            t.style.pointerEvents = '';
-            t.id = 'item-' + it.id;
-            board.appendChild(t);
-
-            // highlight ring (optional)
-            try {
-              var ring = board.querySelector('.ring.' + pl.which);
-              if (ring) ring.classList.add('active');
-            } catch(e){}
-          }
-
           enableDrag(t, board);
         });
 
         try { setTimeout(setupAllRingHelpControls, 20); } catch(e){}
-      }
-
-      function persistGameState() {
-        saveKCState({
-          participantId: participantId,
-          scores: Object.assign({}, SCORES),
-          placements: window.KC_PLACEMENTS || {},
-          item_order: window.KC_ITEM_ORDER ? window.KC_ITEM_ORDER.slice() : null
-        });
       }
 
       function enableDrag (el, board) {
@@ -908,10 +727,9 @@
           e.preventDefault();
 
           clearRingHighlights();
-
           try { el.classList.remove('selected'); } catch(e){}
 
-          original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '').replace(/^item-/, '')));
+          original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '')));
           original.parent = original.placeholder;
           original.id = el.id;
 
@@ -952,9 +770,9 @@
 
           var radii = computeRadii(board);
           clearRingHighlights();
-          if (dist <= radii.rGreen)       { var ring = board.querySelector('.ring.green');  if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rOrange) { var ring = board.querySelector('.ring.orange'); if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rRed)    { var ring = board.querySelector('.ring.red');    if (ring) ring.classList.add('active'); }
+          if (dist <= radii.rGreen)       { var ringG = board.querySelector('.ring.green');  if (ringG) ringG.classList.add('active'); }
+          else if (dist <= radii.rOrange) { var ringO = board.querySelector('.ring.orange'); if (ringO) ringO.classList.add('active'); }
+          else if (dist <= radii.rRed)    { var ringR = board.querySelector('.ring.red');    if (ringR) ringR.classList.add('active'); }
         }
 
         function up (e) {
@@ -977,7 +795,7 @@
           else if (dist <= radii.rOrange)  { droppedIn = true; which = 'orange'; }
           else if (dist <= radii.rRed)     { droppedIn = true; which = 'red'; }
 
-          var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '').replace(/^item-/, '');
+          var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '');
 
           if (droppedIn) {
             var left = elRect.left - boardRect.left;
@@ -1001,18 +819,12 @@
             var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
             setItemScore(dataId, scoreVal);
 
-            // persist placement + score immediately
-            window.KC_PLACEMENTS = window.KC_PLACEMENTS || {};
-            window.KC_PLACEMENTS[dataId] = { which: which, left: left, top: top };
-            persistGameState();
-
             clearRingHighlights();
             var ring = board.querySelector('.ring.' + which);
             if (ring) ring.classList.add('active');
 
-            // NEW: play the correct audio every time it lands in a ring
+            // NEW: play ring instructions every time an item is dropped into a ring
             playRingAudio(which);
-
           } else {
             try {
               el.classList.remove('item');
@@ -1023,14 +835,9 @@
               el.style.width = '';
               el.style.height = '';
               el.style.pointerEvents = '';
-              el.id = (dataId.indexOf('tile-') === 0 || dataId.indexOf('item-') === 0) ? dataId : ('tile-' + dataId);
               if (original.parent) original.parent.appendChild(el);
             } catch (err) { console.error('restore failed', err); }
             setItemScore(dataId, 0);
-
-            // remove placement, persist
-            if (window.KC_PLACEMENTS && window.KC_PLACEMENTS[dataId]) delete window.KC_PLACEMENTS[dataId];
-            persistGameState();
           }
 
           dragEl.classList.remove('dragging');
@@ -1040,49 +847,11 @@
         el.addEventListener('pointerdown', down);
       }
 
-      // =========================
-      // TIMELINE BUILD
-      // =========================
-      timeline.push(makePidEntryTrial());
-
-      timeline.push(makeImageGridQuestion({
-        id: 'nature_type',
-        kc_trial: 'nature_type',
-        saveAs: 'nature_choice',
-        randomize_options: true,
-        prompt: 'Pick the picture that shows the type of nature you would like to spend the most time in?',
-        gridClass: 'kc-optgrid-3',
-        options: [
-          { value: 'nature1', img: 'img/eucalypts.png' },
-          { value: 'nature2', img: 'img/city_scraper.png' },
-          { value: 'nature3', img: 'img/skyscraper_bare.png' },
-          { value: 'nature4', img: 'img/spring_WA.png' },
-          { value: 'nature5', img: 'img/Scary_forest.png' },
-          { value: 'nature6', img: 'img/Rose.png' },
-        ],
-        on_finish: function(){ }
-      }));
-
-      timeline.push(makeImageGridQuestion({
-        id: 'nature_importance',
-        kc_trial: 'nature_importance',
-        saveAs: 'nature_importance',
-        prompt: 'How important is nature to you?',
-        gridClass: 'kc-optgrid-5',
-        options: [
-          { value: 'Not important',           label: 'Not important',           img: 'img/NC1.png' },
-          { value: 'A little bit important',  label: 'A little bit important',  img: 'img/NC2.png' },
-          { value: 'Equally important',       label: 'Equally important',       img: 'img/NC3.png' },
-          { value: 'More important',          label: 'More important',          img: 'img/NC4.png' },
-          { value: 'Very important',          label: 'Very important',          img: 'img/NC5.png' }
-        ]
-      }));
-
       // ======= INSTRUCTIONS (GAME) =======
       var instructions = {
         type: 'html-button-response',
         stimulus:
-          '<div style="width:min(94vw,1100px)">' +
+          '<div style="max-width:820px">' +
             '<h2>Welcome to the circles game!</h2>' +
             '<img src="img/instructions_page.png" alt="Instructions" style="width:100%;height:auto;margin-top:8px;border-radius:8px" />' +
             '<audio id="kc-welcome-audio" preload="auto" controls style="width:100%;margin-top:8px;display:block">' +
@@ -1115,12 +884,8 @@
             } else {
               if (statusEl) statusEl.textContent = 'Audio not available — please contact the researcher.';
             }
-
-            // checkpoint
-            saveStage(4);
           } catch (e) { console.error('instructions on_load failed', e); }
-        },
-        on_finish: function(){ saveStage(4); }
+        }
       };
       timeline.push(instructions);
 
@@ -1132,16 +897,19 @@
         button_html: '<button class="jspsych-btn">%choice%</button>',
         on_load: function () {
           try {
-            // checkpoint: we are in game
-            saveStage(4);
-
             placeStartTiles();
 
-            // clicking empty board clears pinned selection
+            // Clear pinned selection when clicking empty board
             var board = document.getElementById('board');
-            if (board) board.addEventListener('click', function(){ clearAllSelected(); });
+            if (board) {
+              board.addEventListener('click', function(){ clearAllSelected(); });
+            }
 
-            // enable only when all items have some placement saved (or all are in board as .item)
+            // Reposition help controls on orientation change / resize
+            window.addEventListener('resize', function(){
+              try { setTimeout(setupAllRingHelpControls, 50); } catch(e){}
+            });
+
             window.kc_monitor_interval = window.kc_monitor_interval || setInterval(function(){
               try {
                 var btn = document.querySelector('#jspsych-target .jspsych-btn');
@@ -1164,10 +932,6 @@
           data.scores = Object.assign({}, SCORES);
           data.total_score = ITEMS.reduce(function(acc,it){ return acc + (SCORES[it.id] || 0); }, 0);
           data.item_order = window.KC_ITEM_ORDER ? window.KC_ITEM_ORDER.slice() : null;
-          data.placements = window.KC_PLACEMENTS ? JSON.parse(JSON.stringify(window.KC_PLACEMENTS)) : null;
-
-          persistGameState();
-          saveStage(5);
         }
       };
       timeline.push(place_items_trial);
@@ -1196,32 +960,21 @@
           window.KC_SUBMIT_DONE = false;
           window.KC_SUBMIT_ERROR = null;
 
-          saveStage(6);
-
           try {
             var endpoint = window.KC_REMOTE_ENDPOINT || '';
             var secret = window.KC_REMOTE_SECRET || '';
 
-            var st = loadKCState() || {};
-            var scoresObj = Object.assign({}, (st.scores || SCORES));
+            var scoresObj = Object.assign({}, SCORES);
             var total = ITEMS.reduce(function(acc,it){ return acc + (scoresObj[it.id] || 0); }, 0);
 
-            // pull survey answers robustly (works after refresh)
-            var aNatureType = getSavedAnswer('nature_type');
-            var aNatureImp  = getSavedAnswer('nature_importance');
-
-            var nature_choice = aNatureType ? aNatureType.value : null;
-            var nature_importance = aNatureImp ? aNatureImp.value : null;
+            var props = {};
+            try { props = jsPsych.data.get().values()[0] || {}; } catch(e){}
 
             var payload = {
-              participantId: participantId || st.participantId || null,
-              nature_choice: nature_choice,
-              nature_importance: nature_importance,
-              nature_type_meta: aNatureType || null,
-              nature_importance_meta: aNatureImp || null,
+              participantId: participantId,
+              nature_choice: props.nature_choice || null,
+              nature_importance: props.nature_importance || null,
               item_ids: ITEMS.map(function(it){ return it.id; }),
-              item_order: st.item_order || (window.KC_ITEM_ORDER ? window.KC_ITEM_ORDER.slice() : null),
-              placements: st.placements || window.KC_PLACEMENTS || null,
               scores: scoresObj,
               total: total
             };
@@ -1236,8 +989,6 @@
             postResultsToServer(endpoint, secret, payload).then(function(){
               window.KC_SUBMIT_DONE = true;
               window.KC_SUBMIT_ERROR = null;
-              // success: clear saved state so refresh doesn’t resurrect an old session
-              clearKCState();
             }).catch(function(err){
               window.KC_SUBMIT_DONE = true;
               window.KC_SUBMIT_ERROR = (err && err.message) ? err.message : String(err);
@@ -1260,7 +1011,6 @@
                  '</div>',
         choices: [],
         on_load: function() {
-          saveStage(6);
           var start = Date.now();
           var timeout = 20000;
           var iv = setInterval(function(){
@@ -1275,8 +1025,7 @@
               try { jsPsych.finishTrial(); } catch(e){}
             }
           }, 200);
-        },
-        on_finish: function(){ saveStage(7); }
+        }
       };
       timeline.push(wait_for_submit);
 
@@ -1294,77 +1043,18 @@
             '</div>';
         },
         choices: ['Finish'],
-        button_html: '<button class="jspsych-btn kc-continue-btn">%choice%</button>',
-        on_finish: function(){ /* nothing */ }
+        button_html: '<button class="jspsych-btn kc-continue-btn">%choice%</button>'
       };
       timeline.push(final_thanks);
 
-      // =========================
-      // RESUME LOGIC (slice timeline)
-      // =========================
-      var st0 = loadKCState();
-      var startIndex = 0;
-
-      if (st0 && typeof st0.stage === 'number' && (nowMs() - st0.ts) <= KC_TTL_MS) {
-        startIndex = Math.max(0, Math.min(timeline.length - 1, st0.stage));
-        if (st0.participantId) participantId = st0.participantId;
-
-        // Restore scores/placements for game resume
-        if (st0.scores && typeof st0.scores === 'object') {
-          Object.keys(st0.scores).forEach(function(k){ setItemScore(k, st0.scores[k] || 0); });
-        }
-        if (st0.placements && typeof st0.placements === 'object') {
-          window.KC_PLACEMENTS = st0.placements;
-        }
-        if (st0.item_order && Array.isArray(st0.item_order)) {
-          window.KC_ITEM_ORDER = st0.item_order.slice();
-        }
-
-        // Also restore survey properties into jsPsych properties (so exports show them too)
-        try {
-          if (participantId) jsPsych.data.addProperties({ participantId: participantId });
-          var a1 = getSavedAnswer('nature_type');
-          var a2 = getSavedAnswer('nature_importance');
-          var props = {};
-          if (a1 && a1.value) props.nature_choice = a1.value;
-          if (a2 && a2.value) props.nature_importance = a2.value;
-          if (Object.keys(props).length) jsPsych.data.addProperties(props);
-        } catch(e){}
-      }
-
-      // advance stage on trial completion for the first three pages
-      // (keeps resuming simple and stable)
-      var _origFinishTrial = jsPsych.finishTrial;
-      // leave jsPsych internals alone; instead add on_finish stage updates per known positions:
-      // 0 pid -> next 1, 1 nature_type -> next 2, 2 nature_importance -> next 3
-      // we do this using jsPsych's on_trial_finish hook below.
-
-      // =========================
-      // INIT
-      // =========================
+      // ======= INIT =======
       jsPsych.init({
         display_element: 'jspsych-target',
-        timeline: timeline.slice(startIndex),
-
+        timeline: timeline,
         default_iti: 0,
-        auto_preload: false,
-
-        on_trial_finish: function(data){
-          try {
-            // determine which stage we *should* be at next, based on what just finished
-            var st = loadKCState() || {};
-            var cur = (typeof st.stage === 'number') ? st.stage : startIndex;
-
-            if (data && data.kc_trial === 'pid_entry') saveStage(1);
-            if (data && data.kc_trial === 'nature_type') saveStage(2);
-            if (data && data.kc_trial === 'nature_importance') saveStage(3);
-
-            // keep participant id fresh
-            if (participantId) saveKCState({ participantId: participantId });
-
-          } catch(e){}
-        }
+        auto_preload: false
       });
     </script>
   </body>
 </html>
+
