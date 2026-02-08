@@ -235,9 +235,8 @@ function cssPxVar(name, fallback) {
 // Read responsive CSS vars so JS placement matches what is on screen
 var BOARD_SIZE   = cssPxVar('--size', 820);
 var WHITE_MARGIN = cssPxVar('--white-margin', 240);
-
-      var ORANGE_BAND = cssPxVar('--orange-band', 120);
-      var GREEN_BAND  = cssPxVar('--green-band', 24);
+var ORANGE_BAND = cssPxVar('--orange-band', 120);
+var GREEN_BAND  = cssPxVar('--green-band', 24);
 
       function computeRadii(boardEl) {
         boardEl = boardEl || document.getElementById('board');
@@ -494,7 +493,6 @@ var WHITE_MARGIN = cssPxVar('--white-margin', 240);
                 '<div class="ring red"></div>' +
                 '<div class="ring orange"></div>' +
                 '<div class="ring green"></div>' +
-                '<div class="center"></div>' +
                 '<div id="kc-red-help" class="kc-ring-help kc-help-red" title="Play red instructions">?</div>' +
                 '<div id="kc-orange-help" class="kc-ring-help kc-help-orange" title="Play orange instructions">?</div>' +
                 '<div id="kc-green-help" class="kc-ring-help kc-help-green" title="Play green instructions">?</div>' +
@@ -569,8 +567,10 @@ var WHITE_MARGIN = cssPxVar('--white-margin', 240);
         var tileW = 110, tileH = 110;
         var tileRadius = Math.max(tileW, tileH) / 2.5;
 
-   // place tiles near the OUTER edge of the whole board
-var placementRadius = boardRadius - tileRadius - 8;
+// Place tiles OUTSIDE the red ring, in the outer white margin area
+// rRed is the red ring radius; we add an offset into the white area
+var outerGap = Math.max(18, Math.min(WHITE_MARGIN * 0.45, 90)); // tweak if you want
+var placementRadius = rRed + tileRadius + outerGap;
 
         var n = ITEMS.length;
         var angleStep = (Math.PI * 2) / n;
@@ -804,11 +804,13 @@ var placementRadius = boardRadius - tileRadius - 8;
           try {
             placeStartTiles();
             
-    window.addEventListener('resize', function(){
-      BOARD_SIZE   = cssPxVar('--size', 820);
-      WHITE_MARGIN = cssPxVar('--white-margin', 240);
-      placeStartTiles();
-    });
+window.addEventListener('resize', function(){
+  BOARD_SIZE   = cssPxVar('--size', 820);
+  WHITE_MARGIN = cssPxVar('--white-margin', 240);
+  ORANGE_BAND  = cssPxVar('--orange-band', 120);
+  GREEN_BAND   = cssPxVar('--green-band', 24);
+  placeStartTiles();
+});
 
             // NEW: clicking the empty board clears pinned selection
             var board = document.getElementById('board');
@@ -945,7 +947,7 @@ var placementRadius = boardRadius - tileRadius - 8;
               '<div style="margin-top:16px;font-weight:800;font-size:1.6rem;">All done!</div>' +
               (ok
                 ? '<div style="margin-top:10px;font-size:1rem;">Your choices have been saved. Thank you!</div>'
-                : '<div style="margin-top:10px;font-size:1rem;color:#c21f1f;">Your choices may not have saved. Please contact the researcher.</div>'
+                : '<div style="margin-top:10px;font-size:1rem;color:#c21f1f;">Your choices may not have saved. Please refresh the page.</div>'
               ) +
             '</div>';
         },
