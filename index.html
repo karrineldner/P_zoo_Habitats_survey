@@ -117,6 +117,42 @@
       }
       .kc-opt img { width: 100%; height: 140px; object-fit: contain; display:block; }
       .kc-optlabel { margin-top: 10px; font-size: 1.05rem; font-weight: 700; text-align: center; }
+
+      /* ===== LABEL POPUP + CLICK HIGHLIGHT (NEW) ===== */
+      .tile, .item { position: relative; } /* ensure label positioning works */
+
+      /* show label on hover */
+      .tile:hover .kc-label,
+      .item:hover .kc-label { opacity: 1; transform: translate(-50%, 0); }
+
+      /* keep label visible when clicked (selected) */
+      .tile.selected .kc-label,
+      .item.selected .kc-label { opacity: 1; transform: translate(-50%, 0); }
+
+      /* green outline highlight when clicked */
+      .tile.selected, .item.selected {
+        outline: 5px solid rgba(40,167,69,0.85);
+        box-shadow: 0 0 0 6px rgba(40,167,69,0.18);
+      }
+
+      /* label bubble */
+      .kc-label {
+        position: absolute;
+        left: 50%;
+        top: -10px;
+        transform: translate(-50%, -6px);
+        background: rgba(0,0,0,0.85);
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 800;
+        white-space: nowrap;
+        pointer-events: none; /* don't interfere with dragging */
+        opacity: 0;
+        transition: opacity 120ms ease, transform 120ms ease;
+        z-index: 999999;
+      }
     </style>
   </head>
 
@@ -138,25 +174,25 @@
       var ITEMS = [
         { id:'kangaroo',   label:'kangaroo',   img:'img/Kangaroo.png' },
         { id:'city',       label:'city',       img:'img/City.png' },
-        { id:'toothpaste',     label:'toothpaste',     img:'img/Toothpaste.png' },
+        { id:'toothpaste', label:'toothpaste', img:'img/Toothpaste.png' },
         { id:'forest',     label:'forest',     img:'img/Forest.png' },
         { id:'friends',    label:'friends',    img:'img/Friends.png' },
         { id:'giraffe',    label:'giraffe',    img:'img/Giraffe.png' },
         { id:'karak',      label:'karak',      img:'img/Black Cockatoo.png' },
         { id:'park',       label:'park',       img:'img/Park.png' },
-        { id:'beetle',       label:'beetle',       img:'img/Black beetle.png' },
-        { id:'bandicoot',     label:'bandicoot',     img:'img/Bandicoot.png' },
-        { id:'honeybee',      label:'honeybee',      img:'img/Honeybee.png' },
+        { id:'beetle',     label:'beetle',     img:'img/Black beetle.png' },
+        { id:'bandicoot',  label:'bandicoot',  img:'img/Bandicoot.png' },
+        { id:'honeybee',   label:'honeybee',   img:'img/Honeybee.png' },
         { id:'table',      label:'table',      img:'img/Table.png' },
-        { id:'zoo_keeper',      label:'zoo keeper',      img:'img/Zoo Keeper.png' },
-        { id:'gum_tree',       label:'gum tree',       img:'img/Gum tree.png' },
-        { id:'chameleon', label:'chameleon', img:'img/Chameleon.png' },
-        { id:'lion', label:'lion', img:'img/Lion.png' },
-        { id:'pine_tree', label:'pine tree', img:'img/Pine_tree.png' },
+        { id:'zoo_keeper', label:'zoo keeper', img:'img/Zoo Keeper.png' },
+        { id:'gum_tree',   label:'gum tree',   img:'img/Gum tree.png' },
+        { id:'chameleon',  label:'chameleon',  img:'img/Chameleon.png' },
+        { id:'lion',       label:'lion',       img:'img/Lion.png' },
+        { id:'pine_tree',  label:'pine tree',  img:'img/Pine_tree.png' },
         { id:'blue_banded_bee', label:'blue banded bee', img:'img/Blue Banded Bee.png' },
-        { id:'bobtail', label:'bobtail', img:'img/Bobtail.png' },
-        { id:'doctor', label:'doctor', img:'img/Doctor.png' },
-        { id:'peacock', label:'peacock', img:'img/Peacock.png' },
+        { id:'bobtail',    label:'bobtail',    img:'img/Bobtail.png' },
+        { id:'doctor',     label:'doctor',     img:'img/Doctor.png' },
+        { id:'peacock',    label:'peacock',    img:'img/Peacock.png' },
       ];
 
       // Must mirror CSS custom properties
@@ -233,6 +269,49 @@
         try { showError('Error: ' + (ev.error && ev.error.message ? ev.error.message : ev.message)); } catch(e){}
       });
 
+      // ======= LABEL / CLICK HIGHLIGHT HELPERS (NEW) =======
+      function ensureLabel(el, labelText) {
+        if (!el) return;
+        var badge = el.querySelector('.kc-label');
+        if (!badge) {
+          badge = document.createElement('div');
+          badge.className = 'kc-label';
+          el.appendChild(badge);
+        }
+        badge.textContent = labelText || '';
+      }
+
+      function clearAllSelected() {
+        document.querySelectorAll('.tile.selected, .item.selected').forEach(function(x){
+          x.classList.remove('selected');
+        });
+      }
+
+      function attachHoverAndClickLabel(el, labelText) {
+        if (!el) return;
+
+        ensureLabel(el, labelText);
+
+        // click: select + keep label visible
+        el.addEventListener('click', function(e){
+          // ignore click if we're in the middle of dragging
+          if (el.classList.contains('dragging')) return;
+          e.stopPropagation();
+          clearAllSelected();
+          el.classList.add('selected');
+        });
+
+        // keyboard accessibility (optional): Enter/Space selects
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('keydown', function(e){
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            clearAllSelected();
+            el.classList.add('selected');
+          }
+        });
+      }
+
       // ======= SURVEY TRIAL BUILDERS =======
       function makePidEntryTrial() {
         return {
@@ -274,7 +353,6 @@
               try { jsPsych.finishTrial(); } catch(e){}
             });
 
-            // focus for convenience
             try { input.focus(); } catch(e){}
           },
           on_finish: function(data) {
@@ -345,7 +423,6 @@
             data.response_index = sel ? sel.option_index : null;
             data.response_img = sel ? sel.img : null;
 
-            // also store as global properties for easy access later
             try {
               var propName = q.saveAs;
               if (propName && sel) jsPsych.data.addProperties((function(){ var o={}; o[propName]=sel.value; return o; })());
@@ -380,11 +457,11 @@
         prompt: 'How important is nature to you?',
         gridClass: 'kc-optgrid-5',
         options: [
-          { value: 'Not important',          label: 'Not important',          img: 'img/NC1.png' },
-          { value: 'A little bit important',label: 'A little bit important',img: 'img/NC2.png' },
-          { value: 'Equally important',     label: 'Equally important',     img: 'img/NC3.png' },
-          { value: 'More important',        label: 'More important',        img: 'img/NC4.png' },
-          { value: 'Very important',        label: 'Very important',        img: 'img/NC5.png' }
+          { value: 'Not important',           label: 'Not important',           img: 'img/NC1.png' },
+          { value: 'A little bit important',  label: 'A little bit important',  img: 'img/NC2.png' },
+          { value: 'Equally important',       label: 'Equally important',       img: 'img/NC3.png' },
+          { value: 'More important',          label: 'More important',          img: 'img/NC4.png' },
+          { value: 'Very important',          label: 'Very important',          img: 'img/NC5.png' }
         ]
       }));
 
@@ -501,6 +578,7 @@
           t.className = 'tile';
           t.id = 'tile-' + it.id;
           t.setAttribute('data-id', it.id);
+
           if (it.img) {
             var im = document.createElement('img');
             im.src = it.img; im.alt = it.label; im.draggable = false; t.appendChild(im);
@@ -508,6 +586,9 @@
             t.textContent = it.label;
           }
           t.style.touchAction = 'none';
+
+          // NEW: hover label + click-to-pin
+          attachHoverAndClickLabel(t, it.label);
 
           placeholder.appendChild(t);
           board.appendChild(placeholder);
@@ -533,6 +614,9 @@
           e.preventDefault();
 
           clearRingHighlights();
+
+          // clear "pinned" selection on pick-up (optional; remove if you want it to stay selected)
+          try { el.classList.remove('selected'); } catch(e){}
 
           original.placeholder = document.getElementById('ph-' + (el.getAttribute('data-id') || el.id.replace(/^tile-/, '')));
           original.parent = original.placeholder;
@@ -575,9 +659,9 @@
 
           var radii = computeRadii(board);
           clearRingHighlights();
-          if (dist <= radii.rGreen)  { var ring = board.querySelector('.ring.green'); if (ring) ring.classList.add('active'); }
+          if (dist <= radii.rGreen)       { var ring = board.querySelector('.ring.green');  if (ring) ring.classList.add('active'); }
           else if (dist <= radii.rOrange) { var ring = board.querySelector('.ring.orange'); if (ring) ring.classList.add('active'); }
-          else if (dist <= radii.rRed) { var ring = board.querySelector('.ring.red'); if (ring) ring.classList.add('active'); }
+          else if (dist <= radii.rRed)    { var ring = board.querySelector('.ring.red');    if (ring) ring.classList.add('active'); }
         }
 
         function up (e) {
@@ -596,15 +680,16 @@
 
           var radii = computeRadii(board);
           var droppedIn = false; var which = null;
-          if (dist <= radii.rGreen)  { droppedIn = true; which = 'green'; }
-          else if (dist <= radii.rOrange) { droppedIn = true; which = 'orange'; }
-          else if (dist <= radii.rRed) { droppedIn = true; which = 'red'; }
+          if (dist <= radii.rGreen)        { droppedIn = true; which = 'green'; }
+          else if (dist <= radii.rOrange)  { droppedIn = true; which = 'orange'; }
+          else if (dist <= radii.rRed)     { droppedIn = true; which = 'red'; }
 
           var dataId = el.getAttribute('data-id') || original.id.replace(/^tile-/, '');
 
           if (droppedIn) {
             var left = elRect.left - boardRect.left;
             var top  = elRect.top  - boardRect.top;
+
             el.classList.add('item');
             el.style.position = 'absolute';
             el.style.left = left + 'px';
@@ -614,6 +699,11 @@
             el.id = 'item-' + dataId;
             el.setAttribute('data-id', dataId);
             el.style.background = 'transparent';
+
+            // ensure label exists even after moving into board
+            var it = ITEMS.find(function(x){ return x.id === dataId; });
+            attachHoverAndClickLabel(el, (it && it.label) ? it.label : dataId);
+
             board.appendChild(el);
 
             var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
@@ -625,6 +715,7 @@
           } else {
             try {
               el.classList.remove('item');
+              el.classList.remove('selected'); // optional: clear pinned on return
               el.style.position = '';
               el.style.left = '';
               el.style.top = '';
@@ -695,6 +786,14 @@
           try {
             placeStartTiles();
 
+            // NEW: clicking the empty board clears pinned selection
+            var board = document.getElementById('board');
+            if (board) {
+              board.addEventListener('click', function(){
+                clearAllSelected();
+              });
+            }
+
             window.kc_monitor_interval = window.kc_monitor_interval || setInterval(function(){
               try {
                 var btn = document.querySelector('#jspsych-target .jspsych-btn');
@@ -751,7 +850,6 @@
             var scoresObj = Object.assign({}, SCORES);
             var total = ITEMS.reduce(function(acc,it){ return acc + (scoresObj[it.id] || 0); }, 0);
 
-            // pull survey properties from jsPsych data properties
             var props = {};
             try { props = jsPsych.data.get().values()[0] || {}; } catch(e){}
 
