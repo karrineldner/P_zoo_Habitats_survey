@@ -798,9 +798,10 @@ function enableDrag (el, board) {
 
       board.appendChild(el);
 
-      var scoreVal = (which === 'green') ? 1 : (which === 'orange') ? 2 : 3;
+      var scoreVal = (which === 'green') ? 3 : (which === 'orange') ? 2 : 1;
       setItemScore(dataId, scoreVal);
-
+  // NEW: play audio every time an item is released into a ring
+  playRingAudio(which);
       clearRingHighlights();
       var ring = board.querySelector('.ring.' + which);
       if (ring) ring.classList.add('active');
