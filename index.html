@@ -312,6 +312,19 @@
         });
       }
 
+      // ======= RANDOMISATION HELPERS =======
+function shuffleArray(arr) {
+  // Fisher–Yates shuffle (in-place)
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+
       // ======= SURVEY TRIAL BUILDERS =======
       function makePidEntryTrial() {
         return {
@@ -376,60 +389,80 @@
           button_html: '<button class="jspsych-btn" id="kc-continue-btn" disabled style="display:none">%choice%</button>',
           response_ends_trial: false,
           data: { kc_trial: q.kc_trial, question_id: q.id },
-          on_load: function() {
-            window.KC_LAST_SELECTION = null;
-            var optsEl = document.getElementById('kc-options');
-            var contBtn = document.getElementById('kc-continue-btn');
-            if (!optsEl || !contBtn) return;
+         on_load: function() {
+  window.KC_LAST_SELECTION = null;
+  var optsEl = document.getElementById('kc-options');
+  var contBtn = document.getElementById('kc-continue-btn');
+  if (!optsEl || !contBtn) return;
 
-            q.options.forEach(function(opt, idx){
-              var d = document.createElement('div');
-              d.className = 'kc-opt';
-              d.setAttribute('data-value', opt.value);
+  // Optionally randomise options (per participant, per trial load)
+  var opts = (q.options || []).map(function(opt, i){
+    var copy = Object.assign({}, opt);
+    copy._orig_index = i;
+    return copy;
+  });
+  if (q.randomize_options) {
+    shuffleArray(opts);
+  }
 
-              d.innerHTML =
-                '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
-                (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
+  // Save displayed order for later analysis (optional but useful)
+  window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
 
-              d.addEventListener('click', function(){
-                try {
-                  var all = document.querySelectorAll('.kc-opt');
-                  all.forEach(function(x){ x.classList.remove('selected'); });
-                  d.classList.add('selected');
-                } catch(e){}
+  opts.forEach(function(opt, displayIdx){
+    var d = document.createElement('div');
+    d.className = 'kc-opt';
+    d.setAttribute('data-value', opt.value);
 
-                window.KC_LAST_SELECTION = {
-                  value: opt.value,
-                  label: opt.label || '',
-                  img: opt.img,
-                  option_index: idx
-                };
+    d.innerHTML =
+      '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
+      (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
 
-                contBtn.disabled = false;
-                contBtn.style.display = '';
-              });
+    d.addEventListener('click', function(){
+      try {
+        var all = document.querySelectorAll('.kc-opt');
+        all.forEach(function(x){ x.classList.remove('selected'); });
+        d.classList.add('selected');
+      } catch(e){}
 
-              optsEl.appendChild(d);
-            });
+      window.KC_LAST_SELECTION = {
+        value: opt.value,
+        label: opt.label || '',
+        img: opt.img,
+        option_index: displayIdx,      // index in the RANDOMISED display order
+        original_index: opt._orig_index // index in the ORIGINAL q.options array
+      };
 
-            contBtn.addEventListener('click', function(){
-              try { jsPsych.finishTrial(); } catch(e){}
-            });
-          },
-          on_finish: function(data) {
-            var sel = window.KC_LAST_SELECTION;
-            data.response = sel ? sel.value : null;
-            data.response_label = sel ? sel.label : null;
-            data.response_index = sel ? sel.option_index : null;
-            data.response_img = sel ? sel.img : null;
+      contBtn.disabled = false;
+      contBtn.style.display = '';
+    });
 
-            try {
-              var propName = q.saveAs;
-              if (propName && sel) jsPsych.data.addProperties((function(){ var o={}; o[propName]=sel.value; return o; })());
-            } catch(e){}
-          }
-        };
-      }
+    optsEl.appendChild(d);
+  });
+
+  contBtn.addEventListener('click', function(){
+    try { jsPsych.finishTrial(); } catch(e){}
+  });
+},
+on_finish: function(data) {
+  var sel = window.KC_LAST_SELECTION;
+  data.response = sel ? sel.value : null;
+  data.response_label = sel ? sel.label : null;
+
+  // Keep both indices (display + original)
+  data.response_index = sel ? sel.option_index : null;
+  data.response_original_index = sel ? sel.original_index : null;
+
+  data.response_img = sel ? sel.img : null;
+
+  // Store the displayed order (optional but recommended)
+  data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
+
+  try {
+    var propName = q.saveAs;
+    if (propName && sel) jsPsych.data.addProperties((function(){ var o={}; o[propName]=sel.value; return o; })());
+  } catch(e){}
+}
+
 
       // ======= PAGE 1–3 (BEFORE GAME) =======
       timeline.push(makePidEntryTrial());
@@ -438,6 +471,7 @@
         id: 'nature_type',
         kc_trial: 'nature_type',
         saveAs: 'nature_choice',
+        randomize_options: true,   // <-- ADD THIS
         prompt: 'Pick the picture that shows the type of nature you would like to spend the most time in?',
         gridClass: 'kc-optgrid-3',
         options: [
