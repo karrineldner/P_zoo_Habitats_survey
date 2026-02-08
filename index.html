@@ -548,13 +548,36 @@ function kcShowResumeNotice(txt) {
                   option_index: displayIdx,
                   original_index: opt._orig_index
                 };
-
+  // NEW: autosave immediately on click
+  kcSaveState({ lastGrid: { questionId: q.id, selection: window.KC_LAST_SELECTION } });
                 contBtn.disabled = false;
                 contBtn.style.display = '';
               });
 
               optsEl.appendChild(d);
             });
+// NEW: restore selection if this question was already answered (even if Continue wasn't clicked)
+var st = kcGetState && kcGetState();
+var saved = st && st.extra && st.extra.lastGrid;
+
+if (saved && saved.questionId === q.id && saved.selection && saved.selection.value) {
+  var v = saved.selection.value;
+
+  // highlight the previously chosen option
+  var selEl = optsEl.querySelector('[data-value="' + v + '"]');
+  if (selEl) {
+    try {
+      // clear any existing selection and select this one
+      optsEl.querySelectorAll('.kc-opt').forEach(function(x){ x.classList.remove('selected'); });
+      selEl.classList.add('selected');
+    } catch(e){}
+
+    // restore selection object + show Continue
+    window.KC_LAST_SELECTION = saved.selection;
+    contBtn.disabled = false;
+    contBtn.style.display = '';
+  }
+}
 
             contBtn.addEventListener('click', function(){
               try { jsPsych.finishTrial(); } catch(e){}
