@@ -412,99 +412,101 @@
       }
 
       function makeImageGridQuestion(q) {
-        return {
-          type: 'html-button-response',
-          stimulus: function() {
-            var html = '';
-            html += '<div class="kc-qwrap">';
-            html +=   '<div class="kc-qprompt">' + q.prompt + '</div>';
-            html +=   '<div id="kc-options" class="' + q.gridClass + '"></div>';
-            html += '</div>';
-            return html;
-          },
-          choices: ['Continue'],
-          button_html: '<button class="jspsych-btn" id="kc-continue-btn" disabled style="display:none">%choice%</button>',
-          response_ends_trial: false,
-          data: { kc_trial: q.kc_trial, question_id: q.id },
+  return {
+    type: 'html-button-response',
+    stimulus: function() {
+      var html = '';
+      html += '<div class="kc-qwrap">';
+      html +=   '<div class="kc-qprompt">' + q.prompt + '</div>';
+      html +=   '<div id="kc-options" class="' + q.gridClass + '"></div>';
+      html += '</div>';
+      return html;
+    },
+    choices: ['Continue'],
+    button_html: '<button class="jspsych-btn" id="kc-continue-btn" disabled style="display:none">%choice%</button>',
+    response_ends_trial: false,
+    data: { kc_trial: q.kc_trial, question_id: q.id },
 
-          on_load: function() {
-            window.KC_LAST_SELECTION = null;
-            var optsEl = document.getElementById('kc-options');
-            var contBtn = document.getElementById('kc-continue-btn');
-            if (!optsEl || !contBtn) return;
+    on_load: function() {
+      window.KC_LAST_SELECTION = null;
+      var optsEl = document.getElementById('kc-options');
+      var contBtn = document.getElementById('kc-continue-btn');
+      if (!optsEl || !contBtn) return;
 
-            var opts = (q.options || []).map(function(opt, i){
-              var copy = Object.assign({}, opt);
-              copy._orig_index = i;
-              return copy;
+      var opts = (q.options || []).map(function(opt, i){
+        var copy = Object.assign({}, opt);
+        copy._orig_index = i;
+        return copy;
+      });
+
+      if (q.randomize_options) shuffleArray(opts);
+
+      window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
+
+      opts.forEach(function(opt, displayIdx){
+        var d = document.createElement('div');
+        d.className = 'kc-opt';
+        d.setAttribute('data-value', opt.value);
+
+        d.innerHTML =
+          '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
+          (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
+
+        d.addEventListener('click', function(){
+          try {
+            document.querySelectorAll('.kc-opt').forEach(function(x){
+              x.classList.remove('selected');
             });
+            d.classList.add('selected');
+          } catch(e){}
 
-            if (q.randomize_options) {
-              shuffleArray(opts);
-            }
+          window.KC_LAST_SELECTION = {
+            value: opt.value,
+            label: opt.label || '',
+            img: opt.img,
+            option_index: displayIdx,
+            original_index: opt._orig_index
+          };
 
-            window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
+          contBtn.disabled = false;
+          contBtn.style.display = '';
+        });
 
-            opts.forEach(function(opt, displayIdx){
-              var d = document.createElement('div');
-              d.className = 'kc-opt';
-              d.setAttribute('data-value', opt.value);
+        optsEl.appendChild(d);
+      });
 
-              d.innerHTML =
-                '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
-                (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
+      contBtn.addEventListener('click', function(){
+        try { jsPsych.finishTrial(); } catch(e){}
+      });
+    },
 
-              d.addEventListener('click', function(){
-                try {
-                  var all = document.querySelectorAll('.kc-opt');
-                  all.forEach(function(x){ x.classList.remove('selected'); });
-                  d.classList.add('selected');
-                } catch(e){}
+    on_finish: function(data) {
+      var sel = window.KC_LAST_SELECTION;
+      var val = sel ? sel.value : null;
 
-                window.KC_LAST_SELECTION = {
-                  value: opt.value,
-                  label: opt.label || '',
-                  img: opt.img,
-                  option_index: displayIdx,
-                  original_index: opt._orig_index
-                };
+      data.response = val;
+      data.response_label = sel ? sel.label : null;
+      data.response_index = sel ? sel.option_index : null;
+      data.response_original_index = sel ? sel.original_index : null;
+      data.response_img = sel ? sel.img : null;
 
-                contBtn.disabled = false;
-                contBtn.style.display = '';
-              });
+      data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
 
-              optsEl.appendChild(d);
-            });
+      // Save in a guaranteed place
+      if (q.saveAs) {
+        data[q.saveAs] = val;
+        window.KC_SURVEY[q.saveAs] = val;
 
-            contBtn.addEventListener('click', function(){
-              try { jsPsych.finishTrial(); } catch(e){}
-            });
-          },
-
-         on_finish: function(data) {
-  var sel = window.KC_LAST_SELECTION;
-
-  var val = sel ? sel.value : null;
-
-  data.response = val;
-  data.response_label = sel ? sel.label : null;
-  data.response_index = sel ? sel.option_index : null;
-  data.response_original_index = sel ? sel.original_index : null;
-  data.response_img = sel ? sel.img : null;
-
-  data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
-
-  // Save in a guaranteed place
-  if (q.saveAs) {
-    data[q.saveAs] = val;                 // <-- key part
-    window.KC_SURVEY[q.saveAs] = val;     // <-- key part
-    try {
-      var o = {};
-      o[q.saveAs] = val;
-      jsPsych.data.addProperties(o);
-    } catch(e){}
-  }
+        try {
+          var o = {};
+          o[q.saveAs] = val;
+          jsPsych.data.addProperties(o);
+        } catch(e){}
+      }
+    }
+  };
 }
+
 
 
       // ======= PAGE 1–3 (BEFORE GAME) =======
