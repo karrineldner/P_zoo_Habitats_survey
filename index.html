@@ -481,34 +481,31 @@
             });
           },
 
-          on_finish: function(data) {
-            var sel = window.KC_LAST_SELECTION;
+         on_finish: function(data) {
+  var sel = window.KC_LAST_SELECTION;
 
-            data.response = sel ? sel.value : null;
-            data.response_label = sel ? sel.label : null;
-            data.response_index = sel ? sel.option_index : null;
-            data.response_original_index = sel ? sel.original_index : null;
-            data.response_img = sel ? sel.img : null;
+  var val = sel ? sel.value : null;
 
-            data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
-            // ALWAYS store into a simple object we control
-if (q.saveAs) {
-  window.KC_SURVEY[q.saveAs] = sel ? sel.value : null;
+  data.response = val;
+  data.response_label = sel ? sel.label : null;
+  data.response_index = sel ? sel.option_index : null;
+  data.response_original_index = sel ? sel.original_index : null;
+  data.response_img = sel ? sel.img : null;
+
+  data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
+
+  // Save in a guaranteed place
+  if (q.saveAs) {
+    data[q.saveAs] = val;                 // <-- key part
+    window.KC_SURVEY[q.saveAs] = val;     // <-- key part
+    try {
+      var o = {};
+      o[q.saveAs] = val;
+      jsPsych.data.addProperties(o);
+    } catch(e){}
+  }
 }
 
-            try {
-              var propName = q.saveAs;
-              if (propName && sel) {
-                jsPsych.data.addProperties((function(){
-                  var o = {};
-                  o[propName] = sel.value;
-                  return o;
-                })());
-              }
-            } catch(e){}
-          }
-        };
-      }
 
       // ======= PAGE 1–3 (BEFORE GAME) =======
       timeline.push(makePidEntryTrial());
