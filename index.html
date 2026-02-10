@@ -1046,6 +1046,7 @@ var payload = Object.assign(
               showError('No Google Sheets endpoint set. Update window.KC_REMOTE_ENDPOINT at the top of index.html');
               return;
             }
+console.log("PAYLOAD KEYS", Object.keys(payload), payload.efficacy_1, payload.efficacy_2, payload.efficacy_3);
 
             postResultsToServer(endpoint, secret, payload).then(function(){
               window.KC_SUBMIT_DONE = true;
