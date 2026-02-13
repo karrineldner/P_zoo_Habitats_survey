@@ -122,7 +122,20 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
       }
+/* 2 rows of 4 (when you have 8 options) */
+.kc-optgrid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
 
+/* Responsive fallbacks */
+@media (max-width: 900px){
+  .kc-optgrid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px){
+  .kc-optgrid-4 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
       /* Page 3: 5 options, responsive */
       .kc-optgrid-5 {
         display: grid;
@@ -453,12 +466,8 @@
           (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
 
         d.addEventListener('click', function(){
-          try {
-            document.querySelectorAll('.kc-opt').forEach(function(x){
-              x.classList.remove('selected');
-            });
-            d.classList.add('selected');
-          } catch(e){}
+          document.querySelectorAll('.kc-opt').forEach(function(x){ x.classList.remove('selected'); });
+          d.classList.add('selected');
 
           window.KC_LAST_SELECTION = {
             value: opt.value,
@@ -492,14 +501,98 @@
 
       data.option_order = window.KC_OPTION_ORDER ? window.KC_OPTION_ORDER.slice() : null;
 
-      // Save in a guaranteed place
       if (q.saveAs) {
         data[q.saveAs] = val;
         window.KC_SURVEY[q.saveAs] = val;
 
+        // store the selected image for later pages
+        window.KC_SURVEY[q.saveAs + '_img'] = sel ? sel.img : null;
+        window.KC_SURVEY[q.saveAs + '_label'] = sel ? (sel.label || '') : null;
+
         try {
           var o = {};
           o[q.saveAs] = val;
+          jsPsych.data.addProperties(o);
+        } catch(e){}
+      }
+    }
+  };
+}
+
+function makeAudioTextQuestion(q) {
+  return {
+    type: 'html-button-response',
+
+    stimulus: function () {
+      var pickedImg = (q.showPickedImgFrom && window.KC_SURVEY[q.showPickedImgFrom + '_img'])
+        ? window.KC_SURVEY[q.showPickedImgFrom + '_img']
+        : null;
+
+      return (
+        '<div class="kc-qwrap">' +
+          '<div class="kc-qprompt">' + q.prompt + '</div>' +
+          (pickedImg
+            ? '<div style="margin:12px 0;">' +
+ '<img src="' + pickedImg + '" alt="Your chosen environment" ' +
+     'style="max-width:min(100%,1024px); max-height:1024px; width:auto; height:auto; border-radius:12px; border:2px solid rgba(0,0,0,0.12);">' +
+
+
+              '</div>'
+            : ''
+          ) +
+          (q.sub ? ('<div class="kc-qsub">' + q.sub + '</div>') : '') +
+          (q.audio
+            ? '<audio id="kc-audio-q" controls preload="auto" style="width:100%; margin: 10px 0;">' +
+                '<source src="' + q.audio + '" type="audio/mp3">' +
+                'Your browser does not support audio.' +
+              '</audio>'
+            : '') +
+          '<textarea id="kc-text-response" rows="5" ' +
+            'style="width:100%; font-size:1.05rem; padding:12px; border-radius:10px; border:2px solid rgba(0,0,0,0.15);" ' +
+            'placeholder="' + (q.placeholder || 'Type your answer here...') + '"></textarea>' +
+        '</div>'
+      );
+    },
+
+    choices: ['Continue'],
+    button_html: '<button class="jspsych-btn" id="kc-text-continue" disabled style="display:none">%choice%</button>',
+    response_ends_trial: false,
+    data: { kc_trial: q.kc_trial || 'audio_text', question_id: q.id },
+
+    on_load: function() {
+      var ta = document.getElementById('kc-text-response');
+      var btn = document.getElementById('kc-text-continue');
+      if (!ta || !btn) return;
+
+      function update() {
+        var v = (ta.value || '').trim();
+        btn.disabled = (v.length === 0);
+        btn.style.display = (v.length === 0) ? 'none' : '';
+      }
+
+      ta.addEventListener('input', update);
+
+      btn.addEventListener('click', function(){
+        var v = (ta.value || '').trim();
+        if (q.saveAs) window.KC_SURVEY[q.saveAs] = v;
+        try { jsPsych.finishTrial(); } catch(e){}
+      });
+
+      update();
+      try { ta.focus(); } catch(e){}
+    },
+
+    on_finish: function(data) {
+      var resp = (q.saveAs && window.KC_SURVEY[q.saveAs]) ? window.KC_SURVEY[q.saveAs] : '';
+      data.response_text = resp;
+
+      if (q.showPickedImgFrom) {
+        data.shown_img = window.KC_SURVEY[q.showPickedImgFrom + '_img'] || null;
+      }
+
+      if (q.saveAs) {
+        try {
+          var o = {}; o[q.saveAs] = resp;
           jsPsych.data.addProperties(o);
         } catch(e){}
       }
@@ -516,7 +609,7 @@
         id: 'nature_freq',
         kc_trial: 'nature_freq',
         saveAs: 'nature_freq',
-        prompt: 'If you could choose, how much time would you spend in nature?',
+        prompt: 'If you could choose, <br> how much time would you spend outside in nature?',
         gridClass: 'kc-optgrid-5',
         options: [
           { value: 'None of my time',           label: 'None of my time',           img: 'img/ns_1_1.png' },
@@ -534,23 +627,21 @@
         prompt: 'How important is the environment to you?',
         gridClass: 'kc-optgrid-5',
         options: [
-          { value: 'Not important',           label: 'Not important',           img: 'img/ns_2_1.png' },
-          { value: 'A little bit important',  label: 'A little bit important',  img: 'img/ns_2_2.png' },
-          { value: 'Equally important',       label: 'Equally important',       img: 'img/ns_2_3.png' },
-          { value: 'More important',          label: 'More important',          img: 'img/ns_2_4.png' },
-          { value: 'Very important',          label: 'Very important',          img: 'img/ns_2_5.png' }
+          { value: 'Not important',           label: 'Not at all <br> important',           img: 'img/ns_2_1.png' },
+          { value: 'A little bit important',  label: 'A little bit <br> important',  img: 'img/ns_2_2.png' },
+          { value: 'Kind of important',       label: 'Kind of <br> important',       img: 'img/ns_2_3.png' },
+          { value: 'Mostly important',          label: 'Mostly <br> important',          img: 'img/ns_2_4.png' },
+          { value: 'Very important',          label: 'Very <br> important',          img: 'img/ns_2_5.png' }
         ]
       }));
 
-
-      
       timeline.push(makeImageGridQuestion({
         id: 'nature_type',
         kc_trial: 'nature_type',
         saveAs: 'nature_choice',
         randomize_options: true,
-        prompt: 'Pick the place you would like to spend the most time in',
-        gridClass: 'kc-optgrid-3',
+        prompt: 'Pick the environment you would MOST like to visit',
+        gridClass: 'kc-optgrid-4',
         options: [
           { value: 'nature1', img: 'img/nature13.png' },
           { value: 'nature2', img: 'img/city_scraper.png' },
@@ -563,35 +654,60 @@
         ]
       }));
 
+      timeline.push(makeAudioTextQuestion({
+  id: 'nature_like_text',
+  kc_trial: 'nature_like_text',
+  saveAs: 'nature_like_text',          // this becomes the column name in Sheets
+  showPickedImgFrom: 'nature_choice',
+  prompt: 'Tell us what you like about this kind of environment?',
+  sub: 'Listen to the audio, then write your answer.',
+  audio: 'mp3/nature_like_prompt.mp3', // <-- your audio file path
+  placeholder: 'Write a few words or sentences to continue...'
+}));
+
             timeline.push(makeImageGridQuestion({
         id: 'nature_type_dislike',
         kc_trial: 'nature_type_dislike',
         saveAs: 'nature_choice_dislike',
         randomize_options: true,
-        prompt: "Pick the place you would least like to visit",
-        gridClass: 'kc-optgrid-3',
+        prompt: "Pick the environment you would LEAST like to visit",
+        gridClass: 'kc-optgrid-4',
         options: [
-          { value: 'nature1', img: 'img/eucalypts.png' },
+          { value: 'nature1', img: 'img/nature13.png' },
           { value: 'nature2', img: 'img/city_scraper.png' },
           { value: 'nature3', img: 'img/skyscraper_bare.png' },
           { value: 'nature4', img: 'img/spring_WA.png' },
-          { value: 'nature5', img: 'img/Scary_forest.png' },
+          { value: 'nature5', img: 'img/nature10.png' },
           { value: 'nature6', img: 'img/Rose.png' },
+          { value: 'nature7', img: 'img/nature7.png' },
+          { value: 'nature8', img: 'img/nature8.png' },
         ]
       }));
+
+      
+      timeline.push(makeAudioTextQuestion({
+  id: 'nature_dislike_text',
+  kc_trial: 'nature_dislike_text',
+  saveAs: 'nature_dislike_text',          // this becomes the column name in Sheets
+  showPickedImgFrom: 'nature_choice_dislike',   // ✅ this line
+  prompt: 'Tell us what you dislike about this kind of environment.',
+  sub: 'Listen to the audio, then write your answer.',
+  audio: 'mp3/nature_dislike_prompt.mp3', // <-- your audio file path
+  placeholder: 'Write a few words or sentences to continue...'
+}));
 
 
 timeline.push(makeImageGridQuestion({
   id: 'efficacy_1',
   kc_trial: 'efficacy_1',
   saveAs: 'efficacy_1',
-  prompt: 'I can help the environment by what I do',
+  prompt: 'I can help the environment by my actions',
   gridClass: 'kc-optgrid-5',
   options: [
     { value: "1",   label: "I couldn't help at all",   img: 'img/Really_dontlike.png' },
     { value: "2",  label: 'I could help a tiny bit',  img: 'img/Dont_like.png' },
-    { value: "3",             label: "I'm not sure",             img: 'img/Not_sure.png' },
-    { value: '4',       label: 'I could help a lot',       img: 'img/Like_little.png' },
+    { value: "3",             label: "I'm not sure if I could help",             img: 'img/Not_sure.png' },
+    { value: '4',       label: 'I could help some',       img: 'img/Like_little.png' },
     { value: '5',   label: 'I could help very much',   img: 'img/Really_like.png' }
   ]
 }));
@@ -600,31 +716,110 @@ timeline.push(makeImageGridQuestion({
   id: 'efficacy_2',
   kc_trial: 'efficacy_2',
   saveAs: 'efficacy_2',
-  prompt: 'I think I would be good at helping the animals and plants that live near me',
+  prompt: 'I would be good at helping <br>the animals and plants that live near me',
   gridClass: 'kc-optgrid-5',
   options: [
-    { value: "1",   label: "I would be very bad",   img: 'img/Really_dontlike.png' },
+    { value: "1",   label: "I'd be very bad",   img: 'img/Really_dontlike.png' },
     { value: "2",  label: "I'd be a little bit bad",  img: 'img/Dont_like.png' },
     { value: "3",             label: "I'm not sure",             img: 'img/Not_sure.png' },
-    { value: "4",       label: "I'd be a  bit good",       img: 'img/Like_little.png' },
+    { value: "4",       label: "I'd be a bit good",       img: 'img/Like_little.png' },
     { value: "5",   label: "I'd be very good",   img: 'img/Really_like.png' }
   ]
 }));
 
       timeline.push(makeImageGridQuestion({
-  id: 'efficacy_3',
-  kc_trial: 'efficacy_3',
-  saveAs: 'efficacy_3',
-  prompt: 'The small things I do can make the environment better',
+  id: 'efficacy_3_rev',
+  kc_trial: 'efficacy_3_rev',
+  saveAs: 'efficacy_3_rev',
+  prompt: 'The small things I do help make the environment better',
   gridClass: 'kc-optgrid-5',
   options: [
-    { value: "1",   label: "They don't help at all",   img: 'img/Really_dontlike.png' },
+     { value: '5',   label: "They help a lot",   img: 'img/Really_like.png' },
+      { value: '4',       label: "They help a fair bit",       img: 'img/Like_little.png' },
+       { value: "3",             label: "They can maybe help",             img: 'img/Not_sure.png' },
     { value: '2',  label: "They don't help much",  img: 'img/Dont_like.png' },
-    { value: "3",             label: "They can maybe help",             img: 'img/Not_sure.png' },
-    { value: '4',       label: "They help a little",       img: 'img/Like_little.png' },
-    { value: '5',   label: "They help a lot",   img: 'img/Really_like.png' }
+        { value: "1",   label: "They don't help at all",   img: 'img/Really_dontlike.png' },
   ]
 }));
+
+
+                  timeline.push(makeImageGridQuestion({
+  id: 'ownership_1',
+  kc_trial: 'ownership_1',
+  saveAs: 'ownership_1',
+  prompt: 'How connected do you feel to your Habitats for Wildlife project right now?',
+  gridClass: 'kc-optgrid-5',
+  options: [
+          { value: '1',           label: 'Not at all connected',           img: 'img/ns_2_1.png' },
+          { value: '2',  label: 'A tiny bit connected',  img: 'img/ns_2_2.png' },
+          { value: '3',       label: 'Sort of connected',       img: 'img/ns_2_3.png' },
+          { value: '4',          label: 'Pretty connected',          img: 'img/ns_2_4.png' },
+          { value: '5',          label: 'Very connected',          img: 'img/ns_2_5.png' }
+  ]
+}));
+
+                  timeline.push(makeImageGridQuestion({
+  id: 'ownership_2',
+  kc_trial: 'ownership_2',
+  saveAs: 'ownership_2',
+  prompt: 'It is important to do my part to help my Habitats for Wildlife project',
+  gridClass: 'kc-optgrid-5',
+  options: [
+          { value: '1',           label: 'Not important',           img: 'img/ns_2_1.png' },
+          { value: '2',  label: 'A little bit important',  img: 'img/ns_2_2.png' },
+          { value: '3',       label: 'Sort of important',       img: 'img/ns_2_3.png' },
+          { value: '4',          label: 'Pretty important',          img: 'img/ns_2_4.png' },
+          { value: '5',          label: 'Very important',          img: 'img/ns_2_5.png' }
+  ]
+}));
+
+      
+                  timeline.push(makeImageGridQuestion({
+  id: 'ownership_3_rev',
+  kc_trial: 'ownership_3_rev',
+  saveAs: 'ownership_3_rev',
+  prompt: "My Habitats for Wildlife project matters a lot to me",
+  gridClass: 'kc-optgrid-5',
+  options: [
+          { value: '1',          label: 'Does not matter at all',          img: 'img/ns_2_1.png' },
+     { value: '2',          label: "Doesn't matter much",          img: 'img/ns_2_2.png' },
+    { value: '3',       label: 'Sort of matters',       img: 'img/ns_2_3.png' },
+    { value: '4',  label: 'Matters a fair bit',  img: 'img/ns_2_4.png' },
+     { value: '5',           label: 'Matters very much',           img: 'img/ns_2_5.png' },
+  ]
+}));
+
+                        timeline.push(makeImageGridQuestion({
+  id: 'observat_1',
+  kc_trial: 'observat_1',
+  saveAs: 'observat_1',
+  prompt: "How often do you look for animals at school?",
+  gridClass: 'kc-optgrid-5',
+  options: [
+     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
+    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' },
+    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' },
+    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' },
+        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' },
+  ]
+}));
+
+      
+                        timeline.push(makeImageGridQuestion({
+        id: 'observat_2',
+  kc_trial: 'observat_2',
+  saveAs: 'observat_2',
+  prompt: "How often do you look for animals at home?",
+  gridClass: 'kc-optgrid-5',
+  options: [
+     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
+    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' },
+    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' },
+    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' },
+        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' },
+  ]
+}));
+      
 
       // ======= GAME (CIRCLES TASK) =======
       function boardHTML () {
@@ -936,16 +1131,37 @@ timeline.push(makeImageGridQuestion({
       // ======= INSTRUCTIONS (GAME) =======
       var instructions = {
         type: 'html-button-response',
-        stimulus:
-          '<div style="max-width:820px">' +
-            '<h2>Welcome to the circles game!</h2>' +
-            '<img src="img/instructions_page.png" alt="Instructions" style="width:100%;height:auto;margin-top:8px;border-radius:8px" />' +
-            '<audio id="kc-welcome-audio" preload="auto" controls style="width:100%;margin-top:8px;display:block">' +
-              '<source type="audio/mp3" src="mp3/Circles_game_instructions.mp3">' +
-              'Your browser does not support the audio element.' +
-            '</audio>' +
-            '<div id="kc-instr-status" style="margin-top:12px;font-weight:600;">Please play and listen to the audio — the green flag will appear when it finishes.</div>' +
-          '</div>',
+      stimulus:
+  '<div style="max-width:820px">' +
+
+    // Smaller font (normal)
+    '<div style="font-size:1.1rem; font-weight:400;">Welcome to the circles game</div>' +
+    '<div style="font-size:1.1rem; font-weight:400;">You can play the audio to hear the instructions.</div>' +
+
+    '<br>' +
+
+    // Smaller font (bold)
+    '<div style="font-size:1.1rem; font-weight:800;">Tell us what YOU care about!</div>' +
+    '<div style="font-size:1.1rem; font-weight:800;">When you care about something, you want to help it, take care of it, or make sure it is okay.</div>' +
+
+    '<br>' +
+
+    // Current font size (bold)
+    '<div style="font-size:1.6rem; font-weight:800;">Things you care about a LOT go in the green circle.</div>' +
+    '<div style="font-size:1.6rem; font-weight:800;">Things you care about A LITTLE BIT go in the orange circle.</div>' +
+    '<div style="font-size:1.6rem; font-weight:800;">Things you DO NOT CARE about go in the red circle.</div>' +
+
+    '<img src="img/instructions_page.png" alt="Instructions" style="width:100%;height:auto;margin-top:8px;border-radius:8px" />' +
+
+    '<audio id="kc-welcome-audio" preload="auto" controls style="width:100%;margin-top:8px;display:block">' +
+      '<source type="audio/mp3" src="mp3/Circles_game_instructions.mp3">' +
+      'Your browser does not support the audio element.' +
+    '</audio>' +
+
+    '<div id="kc-instr-status" style="margin-top:12px;font-weight:600;">Please play and listen to the audio — the green flag will appear when it finishes.</div>' +
+
+  '</div>',
+
         button_html: '<button class="jspsych-btn flag-btn"><span class="sr-only">%choice%</span><svg class="kc-flag-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M0 0h24v24H0z" fill="none"/><path fill="#28a745" d="M4 3h2v18H4zM6 3c4 0 4 2 8 2s4-2 8-2v9c-4 0-4 2-8 2s-4-2-8-2V3z"/></svg></button>',
         choices: ['I am ready!'],
         on_load: function() {
@@ -1158,4 +1374,3 @@ console.log("PAYLOAD KEYS", Object.keys(payload), payload.efficacy_1, payload.ef
     </script>
   </body>
 </html>
-
