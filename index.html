@@ -654,16 +654,6 @@ function makeAudioTextQuestion(q) {
         ]
       }));
 
-      timeline.push(makeAudioTextQuestion({
-  id: 'nature_like_text',
-  kc_trial: 'nature_like_text',
-  saveAs: 'nature_like_text',          // this becomes the column name in Sheets
-  showPickedImgFrom: 'nature_choice',
-  prompt: 'Tell us what you like about this kind of environment?',
-  sub: 'Listen to the audio, then write your answer.',
-  audio: 'mp3/nature_like_prompt.mp3', // <-- your audio file path
-  placeholder: 'Write a few words or sentences to continue...'
-}));
 
             timeline.push(makeImageGridQuestion({
         id: 'nature_type_dislike',
@@ -684,24 +674,12 @@ function makeAudioTextQuestion(q) {
         ]
       }));
 
-      
-      timeline.push(makeAudioTextQuestion({
-  id: 'nature_dislike_text',
-  kc_trial: 'nature_dislike_text',
-  saveAs: 'nature_dislike_text',          // this becomes the column name in Sheets
-  showPickedImgFrom: 'nature_choice_dislike',   // ✅ this line
-  prompt: 'Tell us what you dislike about this kind of environment.',
-  sub: 'Listen to the audio, then write your answer.',
-  audio: 'mp3/nature_dislike_prompt.mp3', // <-- your audio file path
-  placeholder: 'Write a few words or sentences to continue...'
-}));
-
 
 timeline.push(makeImageGridQuestion({
   id: 'efficacy_1',
   kc_trial: 'efficacy_1',
   saveAs: 'efficacy_1',
-  prompt: 'I can help the environment by my actions',
+  prompt: 'I can help the environment by what I do',
   gridClass: 'kc-optgrid-5',
   options: [
     { value: "1",   label: "I couldn't help at all",   img: 'img/Really_dontlike.png' },
