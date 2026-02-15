@@ -685,11 +685,11 @@ function makeAudioTextQuestion(q) {
         prompt_audio: 'mp3/Important_q.mp3',
         gridClass: 'kc-optgrid-5',
         options: [
-          { value: 'Not important',           label: 'Not at all <br> important',           img: 'img/ns_2_1.png' },
-          { value: 'A little bit important',  label: 'A little bit <br> important',  img: 'img/ns_2_2.png' },
-          { value: 'Kind of important',       label: 'Kind of <br> important',       img: 'img/ns_2_3.png' },
-          { value: 'Pretty important',          label: 'Pretty <br> important',          img: 'img/ns_2_4.png' },
-          { value: 'Very important',          label: 'Very <br> important',          img: 'img/ns_2_5.png' }
+          { value: 'Not important',           label: 'Not at all <br> important',           img: 'img/ns_2_1.png' , audio: 'mp3/Not_all_imp.mp3'},
+          { value: 'A little bit important',  label: 'A little bit <br> important',  img: 'img/ns_2_2.png' , audio: 'mp3/Little_imp.mp3'},
+          { value: 'Kind of important',       label: 'Kind of <br> important',       img: 'img/ns_2_3.png' , audio: 'mp3/Kindof_imp.mp3'},
+          { value: 'Pretty important',          label: 'Pretty <br> important',          img: 'img/ns_2_4.png' , audio: 'mp3/Pretty_imp.mp3'},
+          { value: 'Very important',          label: 'Very <br> important',          img: 'img/ns_2_5.png' , audio: 'mp3/Very_imp.mp3'}
         ]
       }));
 
@@ -699,6 +699,7 @@ function makeAudioTextQuestion(q) {
         saveAs: 'nature_choice',
         randomize_options: true,
         prompt: 'Pick the environment you would MOST like to visit',
+        prompt_audio: 'mp3/Visit_mostq.mp3',
         gridClass: 'kc-optgrid-4',
         options: [
           { value: 'nature1', img: 'img/nature13.png' },
@@ -719,6 +720,7 @@ function makeAudioTextQuestion(q) {
         saveAs: 'nature_choice_dislike',
         randomize_options: true,
         prompt: "Pick the environment you would LEAST like to visit",
+               prompt_audio: 'mp3/Visit_leastq.mp3',
         gridClass: 'kc-optgrid-4',
         options: [
           { value: 'nature1', img: 'img/nature13.png' },
@@ -738,6 +740,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'efficacy_1',
   saveAs: 'efficacy_1',
   prompt: 'I can help the environment by what I do',
+  prompt_audio: 'mp3/efficacy_1_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
     { value: "1",   label: "I couldn't help at all",   img: 'img/Really_dontlike.png' },
@@ -753,6 +756,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'efficacy_2',
   saveAs: 'efficacy_2',
   prompt: 'I would be good at helping <br>the animals and plants that live near me',
+  prompt_audio: 'mp3/efficacy_2_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
     { value: "1",   label: "I'd be very bad",   img: 'img/Really_dontlike.png' },
@@ -768,6 +772,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'efficacy_3_rev',
   saveAs: 'efficacy_3_rev',
   prompt: 'The small things I do help make the environment better',
+        prompt_audio: 'mp3/efficacy_3_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
      { value: '5',   label: "They help a lot",   img: 'img/Really_like.png' },
@@ -784,6 +789,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'ownership_1',
   saveAs: 'ownership_1',
   prompt: 'How connected do you feel to your Habitats for Wildlife project right now?',
+  prompt_audio: 'mp3/connected_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
           { value: '1',           label: 'Not at all connected',           img: 'img/ns_2_1.png' },
@@ -799,6 +805,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'ownership_2',
   saveAs: 'ownership_2',
   prompt: 'It is important to do my part to help my Habitats for Wildlife project',
+  prompt_audio: 'mp3/ownership_2_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
           { value: '1',           label: 'Not important',           img: 'img/ns_2_1.png' },
@@ -815,6 +822,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'ownership_3_rev',
   saveAs: 'ownership_3_rev',
   prompt: "My Habitats for Wildlife project matters a lot to me",
+  prompt_audio: 'mp3/ownership_3_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
           { value: '1',          label: 'Does not matter at all',          img: 'img/ns_2_1.png' },
@@ -830,6 +838,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'observat_1',
   saveAs: 'observat_1',
   prompt: "How often do you look for animals at school?",
+  prompt_audio: 'mp3/Look_anim_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
      { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
@@ -846,6 +855,7 @@ timeline.push(makeImageGridQuestion({
   kc_trial: 'observat_2',
   saveAs: 'observat_2',
   prompt: "How often do you look for animals at home?",
+  prompt_audio: 'mp3/Look_home_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
      { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
