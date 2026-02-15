@@ -452,8 +452,9 @@ function kcPreloadAudio(srcList) {
     stimulus: function() {
       var html = '';
       html += '<div class="kc-qwrap">';
-      html +=   '<div class="kc-qprompt">' + q.prompt + '</div>';
-      html +=   '<div id="kc-options" class="' + q.gridClass + '"></div>';
+ html +=   '<div class="kc-qprompt">' + q.prompt + '</div>';
+html +=   '<div id="kc-audio-controls"></div>'; // NEW
+html +=   '<div id="kc-options" class="' + q.gridClass + '"></div>';
       html += '</div>';
       return html;
     },
@@ -471,10 +472,17 @@ function kcPreloadAudio(srcList) {
   // --- NEW: preload all audio (prompt + options) ---
   kcPreloadAudio([q.prompt_audio].concat((q.options||[]).map(function(o){ return o.audio; })));
 
-  // --- NEW: play prompt audio (will work after first user gesture; otherwise it may be blocked) ---
-  if (q.prompt_audio) {
-    kcPlayAudio(q.prompt_audio);
-  }
+var audioControls = document.getElementById('kc-audio-controls');
+
+if (audioControls && q.prompt_audio) {
+  audioControls.innerHTML =
+    '<button type="button" class="kc-audio-btn" id="kc-play-prompt-audio">' +
+      '<span class="kc-audio-ico">🔊</span><span>Play question audio</span>' +
+    '</button>';
+
+  var btn = document.getElementById('kc-play-prompt-audio');
+  if (btn) btn.addEventListener('click', function(){ kcPlayAudio(q.prompt_audio); });
+}
 
   var opts = (q.options || []).map(function(opt, i){
     var copy = Object.assign({}, opt);
