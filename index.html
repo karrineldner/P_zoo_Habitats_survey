@@ -423,7 +423,29 @@
           }
         };
       }
+function kcPlayAudio(src) {
+  if (!src) return;
+  try {
+    // stop previous
+    if (window._kc_audio) {
+      try { window._kc_audio.pause(); } catch(e){}
+      window._kc_audio = null;
+    }
+    var a = new Audio(src);
+    window._kc_audio = a;
+    a.play().catch(function(){ /* autoplay blocked until user gesture */ });
+  } catch(e){}
+}
 
+function kcPreloadAudio(srcList) {
+  try {
+    (srcList || []).filter(Boolean).forEach(function(src){
+      var a = new Audio();
+      a.preload = "auto";
+      a.src = src;
+    });
+  } catch(e){}
+}
       function makeImageGridQuestion(q) {
   return {
     type: 'html-button-response',
@@ -441,53 +463,78 @@
     data: { kc_trial: q.kc_trial, question_id: q.id },
 
     on_load: function() {
-      window.KC_LAST_SELECTION = null;
-      var optsEl = document.getElementById('kc-options');
-      var contBtn = document.getElementById('kc-continue-btn');
-      if (!optsEl || !contBtn) return;
+  window.KC_LAST_SELECTION = null;
+  var optsEl = document.getElementById('kc-options');
+  var contBtn = document.getElementById('kc-continue-btn');
+  if (!optsEl || !contBtn) return;
 
-      var opts = (q.options || []).map(function(opt, i){
-        var copy = Object.assign({}, opt);
-        copy._orig_index = i;
-        return copy;
-      });
+  // --- NEW: preload all audio (prompt + options) ---
+  kcPreloadAudio([q.prompt_audio].concat((q.options||[]).map(function(o){ return o.audio; })));
 
-      if (q.randomize_options) shuffleArray(opts);
+  // --- NEW: play prompt audio (will work after first user gesture; otherwise it may be blocked) ---
+  if (q.prompt_audio) {
+    kcPlayAudio(q.prompt_audio);
+  }
 
-      window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
+  var opts = (q.options || []).map(function(opt, i){
+    var copy = Object.assign({}, opt);
+    copy._orig_index = i;
+    return copy;
+  });
 
-      opts.forEach(function(opt, displayIdx){
-        var d = document.createElement('div');
-        d.className = 'kc-opt';
-        d.setAttribute('data-value', opt.value);
+  if (q.randomize_options) shuffleArray(opts);
 
-        d.innerHTML =
-          '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
-          (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
+  window.KC_OPTION_ORDER = opts.map(function(o){ return o.value; });
 
-        d.addEventListener('click', function(){
-          document.querySelectorAll('.kc-opt').forEach(function(x){ x.classList.remove('selected'); });
-          d.classList.add('selected');
+  opts.forEach(function(opt, displayIdx){
+    var d = document.createElement('div');
+    d.className = 'kc-opt';
+    d.setAttribute('data-value', opt.value);
 
-          window.KC_LAST_SELECTION = {
-            value: opt.value,
-            label: opt.label || '',
-            img: opt.img,
-            option_index: displayIdx,
-            original_index: opt._orig_index
-          };
+    d.innerHTML =
+      '<img src="' + opt.img + '" alt="' + (opt.label || opt.value) + '">' +
+      (opt.label ? ('<div class="kc-optlabel">' + opt.label + '</div>') : '');
 
-          contBtn.disabled = false;
-          contBtn.style.display = '';
-        });
+    // NEW: make option keyboard-focusable
+    d.setAttribute('tabindex', '0');
 
-        optsEl.appendChild(d);
-      });
+    d.addEventListener('click', function(){
+      try {
+        document.querySelectorAll('.kc-opt').forEach(function(x){ x.classList.remove('selected'); });
+        d.classList.add('selected');
+      } catch(e){}
 
-      contBtn.addEventListener('click', function(){
-        try { jsPsych.finishTrial(); } catch(e){}
-      });
-    },
+      // --- NEW: play option audio on click ---
+      if (opt.audio) kcPlayAudio(opt.audio);
+
+      window.KC_LAST_SELECTION = {
+        value: opt.value,
+        label: opt.label || '',
+        img: opt.img,
+        option_index: displayIdx,
+        original_index: opt._orig_index
+      };
+
+      contBtn.disabled = false;
+      contBtn.style.display = '';
+    });
+
+    // Optional: play audio when using keyboard Enter/Space
+    d.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        d.click();
+      }
+    });
+
+    optsEl.appendChild(d);
+  });
+
+  contBtn.addEventListener('click', function(){
+    try { jsPsych.finishTrial(); } catch(e){}
+  });
+},
+
 
     on_finish: function(data) {
       var sel = window.KC_LAST_SELECTION;
@@ -610,21 +657,24 @@ function makeAudioTextQuestion(q) {
         kc_trial: 'nature_freq',
         saveAs: 'nature_freq',
         prompt: 'If you could choose, <br> how much time would you spend outside in nature?',
+        prompt_audio: 'mp3/time_nature.mp3'
         gridClass: 'kc-optgrid-5',
         options: [
-          { value: 'None of my time',           label: 'None of my time',           img: 'img/ns_1_1.png' },
-          { value: 'A little of my time',  label: 'A little of my time',  img: 'img/ns1_2.png' },
-          { value: 'Half of my time',       label: 'Half of my time',       img: 'img/ns1_3.png' },
-          { value: 'Most of my time',          label: 'Most of my time',          img: 'img/Ns1_4.png' },
-          { value: 'All of my time',          label: 'All of my time',          img: 'img/Ns_1_5.png' }
+          { value: 'None of my time',           label: 'None of my time',           img: 'img/ns_1_1.png' , audio: 'mp3/None_time.mp3'},
+          { value: 'A little of my time',  label: 'A little of my time',  img: 'img/ns1_2.png' , 'mp3/Little_time.mp3'},
+          { value: 'Half of my time',       label: 'Half of my time',       img: 'img/ns1_3.png' , 'mp3/Half_time.mp3'},
+          { value: 'Most of my time',          label: 'Most of my time',          img: 'img/Ns1_4.png' , 'mp3/Most_time.mp3'},
+          { value: 'All of my time',          label: 'All of my time',          img: 'img/Ns_1_5.png' , 'mp3/All_time.mp3' }
         ]
       }));
+
 
             timeline.push(makeImageGridQuestion({
         id: 'nature_importance',
         kc_trial: 'nature_importance',
         saveAs: 'nature_importance',
         prompt: 'How important is the environment to you?',
+        prompt_audio: 'mp3/Important_q.mp3'
         gridClass: 'kc-optgrid-5',
         options: [
           { value: 'Not important',           label: 'Not at all <br> important',           img: 'img/ns_2_1.png' },
