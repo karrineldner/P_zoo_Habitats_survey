@@ -743,11 +743,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/efficacy_1_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-    { value: "1",   label: "I couldn't help at all",   img: 'img/Really_dontlike.png' },
-    { value: "2",  label: 'I could help a tiny bit',  img: 'img/Dont_like.png' },
-    { value: "3",             label: "I'm not sure if I could help",             img: 'img/Not_sure.png' },
-    { value: '4',       label: 'I could help some',       img: 'img/Like_little.png' },
-    { value: '5',   label: 'I could help very much',   img: 'img/Really_like.png' }
+    { value: "1",   label: "I couldn't help at all",   img: 'img/Really_dontlike.png' , audio: 'mp3/No_helpall.mp3'},
+    { value: "2",  label: 'I could help a tiny bit',  img: 'img/Dont_like.png'  , audio: 'mp3/Tiny_help.mp3'},
+    { value: "3",             label: "I'm not sure if I could help",             img: 'img/Not_sure.png' , audio: 'mp3/Notsure_help.mp3'},
+    { value: '4',       label: 'I could help some',       img: 'img/Like_little.png'  , audio: 'mp3/Help_some.mp3'},
+    { value: '5',   label: 'I could help very much',   img: 'img/Really_like.png'  , audio: 'mp3/Help_vmuch.mp3'}
   ]
 }));
 
@@ -759,11 +759,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/efficacy_2_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-    { value: "1",   label: "I'd be very bad",   img: 'img/Really_dontlike.png' },
-    { value: "2",  label: "I'd be a little bit bad",  img: 'img/Dont_like.png' },
-    { value: "3",             label: "I'm not sure",             img: 'img/Not_sure.png' },
-    { value: "4",       label: "I'd be a bit good",       img: 'img/Like_little.png' },
-    { value: "5",   label: "I'd be very good",   img: 'img/Really_like.png' }
+    { value: "1",   label: "I'd be very bad",   img: 'img/Really_dontlike.png' , audio: 'mp3/no_help_all.mp3'},
+    { value: "2",  label: "I'd be a little bit bad",  img: 'img/Dont_like.png' , audio: 'mp3/no_help_all.mp3'},
+    { value: "3",             label: "I'm not sure",             img: 'img/Not_sure.png' , audio: 'mp3/no_help_all.mp3'},
+    { value: "4",       label: "I'd be a bit good",       img: 'img/Like_little.png' , audio: 'mp3/no_help_all.mp3'},
+    { value: "5",   label: "I'd be very good",   img: 'img/Really_like.png' }, audio: 'mp3/no_help_all.mp3'},
   ]
 }));
 
@@ -775,11 +775,11 @@ timeline.push(makeImageGridQuestion({
         prompt_audio: 'mp3/efficacy_3_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-     { value: '5',   label: "They help a lot",   img: 'img/Really_like.png' },
-      { value: '4',       label: "They help a fair bit",       img: 'img/Like_little.png' },
-       { value: "3",             label: "They can maybe help",             img: 'img/Not_sure.png' },
-    { value: '2',  label: "They don't help much",  img: 'img/Dont_like.png' },
-        { value: "1",   label: "They don't help at all",   img: 'img/Really_dontlike.png' },
+     { value: '5',   label: "They help a lot",   img: 'img/Really_like.png', audio: 'mp3/help_alot.mp3'},
+      { value: '4',       label: "They help a fair bit",       img: 'img/Like_little.png', audio: 'mp3/help_fairbit.mp3'},
+       { value: "3",             label: "They can maybe help",             img: 'img/Not_sure.png', audio: 'mp3/Maybe_help.mp3'},
+    { value: '2',  label: "They don't help much",  img: 'img/Dont_like.png',  audio: 'mp3/no_helpmuch.mp3'},
+        { value: "1",   label: "They don't help at all",   img: 'img/Really_dontlike.png' , audio: 'mp3/no_help_all.mp3'}
   ]
 }));
 
@@ -792,11 +792,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/connected_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-          { value: '1',           label: 'Not at all connected',           img: 'img/ns_2_1.png' },
-          { value: '2',  label: 'A tiny bit connected',  img: 'img/ns_2_2.png' },
-          { value: '3',       label: 'Sort of connected',       img: 'img/ns_2_3.png' },
-          { value: '4',          label: 'Pretty connected',          img: 'img/ns_2_4.png' },
-          { value: '5',          label: 'Very connected',          img: 'img/ns_2_5.png' }
+          { value: '1',           label: 'Not at all connected',           img: 'img/ns_2_1.png'  , audio: 'mp3/no_connect.mp3'},
+          { value: '2',  label: 'A tiny bit connected',  img: 'img/ns_2_2.png'  , audio: 'mp3/tiny_connect.mp3'},
+          { value: '3',       label: 'Sort of connected',       img: 'img/ns_2_3.png'  , audio: 'mp3/sort_of_connect.mp3'},
+          { value: '4',          label: 'Pretty connected',          img: 'img/ns_2_4.png'  , audio: 'mp3/pretty_conncet.mp3'},
+          { value: '5',          label: 'Very connected',          img: 'img/ns_2_5.png'  , audio: 'mp3/very_connect.mp3'}
   ]
 }));
 
@@ -808,11 +808,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/ownership_2_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-          { value: '1',           label: 'Not important',           img: 'img/ns_2_1.png' },
-          { value: '2',  label: 'A little bit important',  img: 'img/ns_2_2.png' },
-          { value: '3',       label: 'Sort of important',       img: 'img/ns_2_3.png' },
-          { value: '4',          label: 'Pretty important',          img: 'img/ns_2_4.png' },
-          { value: '5',          label: 'Very important',          img: 'img/ns_2_5.png' }
+          { value: '1',           label: 'Not important',           img: 'img/ns_2_1.png' , audio: 'mp3/Not_all_imp.mp3'},
+          { value: '2',  label: 'A little bit important',  img: 'img/ns_2_2.png' , audio: 'mp3/Little_imp.mp3'},
+          { value: '3',       label: 'Kind of important',       img: 'img/ns_2_3.png' , audio: 'mp3/Kindof_imp.mp3'},
+          { value: '4',          label: 'Pretty important',          img: 'img/ns_2_4.png', audio: 'mp3/Pretty_imp.mp3'},
+          { value: '5',          label: 'Very important',          img: 'img/ns_2_5.png' , audio: 'mp3/Very_imp.mp3'}
   ]
 }));
 
@@ -825,11 +825,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/ownership_3_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-          { value: '1',          label: 'Does not matter at all',          img: 'img/ns_2_1.png' },
-     { value: '2',          label: "Doesn't matter much",          img: 'img/ns_2_2.png' },
-    { value: '3',       label: 'Sort of matters',       img: 'img/ns_2_3.png' },
-    { value: '4',  label: 'Matters a fair bit',  img: 'img/ns_2_4.png' },
-     { value: '5',           label: 'Matters very much',           img: 'img/ns_2_5.png' },
+          { value: '1',          label: 'Does not matter at all',          img: 'img/ns_2_1.png' , audio: 'mp3/No_matter.mp3'},
+     { value: '2',          label: "Doesn't matter much",          img: 'img/ns_2_2.png' , audio: 'mp3/No_mattermuch.mp3'},
+    { value: '3',       label: 'Sort of matters',       img: 'img/ns_2_3.png' , audio: 'mp3/sort_matt.mp3'},
+    { value: '4',  label: 'Matters a fair bit',  img: 'img/ns_2_4.png' , audio: 'mp3/fairbit_matt.mp3'},
+     { value: '5',           label: 'Matters very much',           img: 'img/ns_2_5.png' , audio: 'mp3/matt_vmuch.mp3'}
   ]
 }));
 
@@ -841,11 +841,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/Look_anim_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
-    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' },
-    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' },
-    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' },
-        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' },
+     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' , audio: 'mp3/None_time.mp3'},
+    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' , audio: 'mp3/Little_time.mp3'},
+    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' , audio: 'mp3/Half_time.mp3'},
+    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' , audio: 'mp3/Most_time.mp3'},
+        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' , audio: 'mp3/All_time.mp3'}
   ]
 }));
 
@@ -858,11 +858,11 @@ timeline.push(makeImageGridQuestion({
   prompt_audio: 'mp3/Look_home_q.mp3',
   gridClass: 'kc-optgrid-5',
   options: [
-     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png' },
-    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' },
-    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' },
-    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' },
-        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' },
+     { value: '1',          label: 'None of my time',          img: 'img/ns_2_1.png'  , audio: 'mp3/None_time.mp3'},
+    { value: '2',          label: 'A little bit of my time',          img: 'img/ns_2_2.png' , audio: 'mp3/Little_time.mp3'},
+    { value: '3',       label: 'Half of my time',       img: 'img/ns_2_3.png' , audio: 'mp3/Half_time.mp3'},
+    { value: '4',  label: 'Most of the time',  img: 'img/ns_2_4.png' , audio: 'mp3/Most_time.mp3'},
+        { value: '5',           label: 'All the time',           img: 'img/ns_2_5.png' , audio: 'mp3/All_time.mp3'}
   ]
 }));
       
